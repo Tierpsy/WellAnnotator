@@ -111,19 +111,6 @@ def _updateUI(ui):
     ui.horizontalLayout_2.removeWidget(ui.playButton)
     ui.horizontalLayout.addWidget(ui.playButton)
 
-    # second layer
-    ui.good_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.good_well_b)
-    ui.good_well_b.setText("Good Well")
-
-    ui.bad_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.bad_well_b)
-    ui.bad_well_b.setText("Bad Well")
-
-    ui.misaligned_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.misaligned_well_b)
-    ui.misaligned_well_b.setText("Misaligned Well")
-
     # third layer
     ui.prev_well_b = QPushButton(ui.centralWidget)
     ui.horizontalLayout_3.addWidget(ui.prev_well_b)
@@ -193,6 +180,7 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         self.well_name = ''
         self.tiles = None
         self.well_names = []
+        self.wells_df = None  # current video's
 
         self.frame_number = 0
         self.min_frame = 0
@@ -234,10 +222,10 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
             self.well_names = []
             self.tiles = None
             self.ui.wells_comboBox.clear()
+            self.wells_df = None
 
         self.vfilename = vfilename
         self.imgstore_name = Path(vfilename).parent.name
-        self.ui.lineEdit_video.setText(self.vfilename)
         self.ui.label_vid.setText(self.imgstore_name)
         # self.videos_dir = self.vfilename.rpartition(os.sep)[0] + os.sep
 
@@ -262,8 +250,9 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
             img_stack = fid.get_node('/full_data').read().copy()
         tiles_list = fovsplitter.tile_FOV(img_stack)
 
+        self.wells_df = fovsplitter.wells.copy().set_index('well_name')
         self.tiles = {k: v for (k, v) in tiles_list}
-        self.well_names = list(self.tiles.keys())
+        self.well_names = self.wells_df.index.to_list()
         self.ui.wells_comboBox.clear()
         for wi, wn in enumerate(self.well_names):
             self.ui.wells_comboBox.addItem(wn)
