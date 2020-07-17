@@ -8,18 +8,15 @@ Created on Fri Jun 26 16:13:32 2020
 import sys
 import tables
 from pathlib import Path
-from functools import partial
 
-from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
-    QApplication, QLabel, QCheckBox, QPushButton, QComboBox, QMessageBox,
-    QHBoxLayout)
+    QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout)
+# from PyQt.QtWidgets import QCheckBox, QMessageBox
 
 from HDF5VideoPlayer import HDF5VideoPlayerGUI
 
 from tierpsy.analysis.split_fov.FOVMultiWellsSplitter import (
     FOVMultiWellsSplitter)
-# from HDF5VideoPlayer_ui import Ui_HDF5VideoPlayer
 
 
 def _updateUI(ui):
@@ -161,8 +158,6 @@ def _updateUI(ui):
     # ui.horizontalLayout.removeWidget(ui.pushButton_video)
     ui.horizontalLayout_6.addWidget(ui.pushButton_video)
 
-
-
     return ui
 
 
@@ -195,7 +190,6 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         self.ui.next_well_b.clicked.connect(self.nextWell_fun)
         self.ui.prev_well_b.clicked.connect(self.prevWell_fun)
 
-
     def wheelEvent(self, event):
         delta = event.pixelDelta().y()
         # -1, 0, +1, cool syntax:
@@ -204,12 +198,11 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         candidate = max(min(current + delta, self.tot_frames), 0)
         self.ui.spinBox_frame.setValue(candidate)
 
-
     def keyPressEvent(self, event):
         print(self.vfilename)
 
-
     def updateVideoFile(self, vfilename):
+
         # close the if there was another file opened before.
         if self.fid is not None:
             self.fid.close()
@@ -258,8 +251,10 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
             self.ui.wells_comboBox.addItem(wn)
         self.updateImGroup(0)
 
-
     def updateImGroup(self, well_index):
+        if well_index < 0:
+            # this happens when clearing the combobox
+            return
 
         self.well_name = self.ui.wells_comboBox.itemText(well_index)
         self.ui.label_well.setText(f'well name: {self.well_name}')
@@ -298,9 +293,6 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         self.ui.wells_comboBox.setCurrentIndex(
             max(0, self.ui.wells_comboBox.currentIndex() - 1))
         return
-
-
-
 
 
 if __name__ == '__main__':

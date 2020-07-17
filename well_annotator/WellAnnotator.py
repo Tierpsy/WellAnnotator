@@ -6,7 +6,6 @@ Created on Wed Jul 15 16:12:37 2020
 @author: lferiani
 """
 
-import os
 import sys
 import pandas as pd
 
@@ -23,7 +22,6 @@ from PyQt5.QtWidgets import (
 from helper import (
     check_good_input, get_or_create_annotations_file,
     WELLS_ANNOTATIONS_DF_COLS,
-    WELL_LABELS,
     BUTTON_STYLESHEET_STR,
     BTN_COLOURS,
     )
@@ -85,13 +83,13 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self.wells_annotations_df = None
         self.current_file_id = None
 
-        self.buttons = {0: self.ui.good_well_b,
-                        1: self.ui.misaligned_well_b,
-                        2: self.ui.precipitation_well_b,
-                        3: self.ui.contamination_well_b,
-                        4: self.ui.wet_well_b,
-                        5: self.ui.badagar_well_b,
-                        6: self.ui.otherbad_well_b}
+        self.buttons = {1: self.ui.good_well_b,
+                        2: self.ui.misaligned_well_b,
+                        3: self.ui.precipitation_well_b,
+                        4: self.ui.contamination_well_b,
+                        5: self.ui.wet_well_b,
+                        6: self.ui.badagar_well_b,
+                        7: self.ui.otherbad_well_b}
 
         LineEditDragDrop(
             self.ui.lineEdit_video,
@@ -115,10 +113,10 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             self.working_dir = Path(
                 fid.get_storer('filenames_df').attrs.working_dir)
             self.wells_annotations_df = fid['/wells_annotations_df'].copy()
-        print(self.wellsanns_file)
-        print(self.filenames_df)
-        print(self.filenames_df['file_id'].min())
-        print(self.wells_annotations_df)
+        # print(self.wellsanns_file)
+        # print(self.filenames_df)
+        # print(self.filenames_df['file_id'].min())
+        # print(self.wells_annotations_df)
 
         self.ui.lineEdit_video.setText(str(self.wellsanns_file))
 
@@ -128,13 +126,13 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         pass
 
     def updateVideoFile(self, file_id_to_open):
-        print(f'file_id before updating: {self.current_file_id})')
+        # print(f'file_id before updating: {self.current_file_id})')
         # store the previous video's annotations in self.wells_annotations_df
         if self.wells_df is not None:
-            print('temp storing progress')
+            # print('temp storing progress')
             self.store_progress()
-        else:
-            print('no progress to store yet')
+        # else:
+            # print('no progress to store yet')
         vfile_to_open = self.get_vfilename_from_file_id(file_id_to_open)
         # use WellsVideoPlayer's
         super().updateVideoFile(vfile_to_open)
@@ -146,9 +144,9 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 f'file_id == {self.current_file_id}').set_index('well_name')
         else:
             # add labels column
-            self.wells_df['well_label'] = -1
+            self.wells_df['well_label'] = 0
             self.wells_df['file_id'] = self.current_file_id
-        print(f'file_id after updating: {self.current_file_id})')
+        # print(f'file_id after updating: {self.current_file_id})')
         # update ui elements
         self.ui.label_vid_counter.setText(
             (f'{self.current_file_id+1}/'
@@ -160,7 +158,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         if self.wells_annotations_df.shape[0] == 0:
             return 0
         else:
-            ind = self.wells_annotations_df['well_label'] == -1
+            ind = self.wells_annotations_df['well_label'] == 0
             left_behind = self.wells_annotations_df[ind]
             return left_behind['file_id'].min()
 
@@ -174,11 +172,11 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         add wells_df to self.wells_annotations_df
         """
         # easy case: this is the first time we see these wells
-        print(f'check if {self.current_file_id} is in ')
-        print(self.wells_annotations_df['file_id'])
+        # print(f'check if {self.current_file_id} is in ')
+        # print(self.wells_annotations_df['file_id'])
         if (self.current_file_id
                 not in self.wells_annotations_df['file_id'].values):
-            print('appending')
+            # print('appending')
             self.wells_annotations_df = self.wells_annotations_df.append(
                 self.wells_df.reset_index(
                     drop=False
@@ -189,7 +187,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 )
         else:
             # these wells were seen before. update them
-            print('updating')
+            # print('updating')
             idx = self.wells_annotations_df['file_id'] == self.current_file_id
             # next line assumes wells order not to have changed
             # since wells_df was first appendsed. sounds reasonable enough
@@ -199,8 +197,8 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 ), 'wells order not matching'
             self.wells_annotations_df.loc[idx, 'well_label'] = (
                 self.wells_df['well_label'].values)
-        print('wells_annotations_df:')
-        print(self.wells_annotations_df)
+        # print('wells_annotations_df:')
+        # print(self.wells_annotations_df)
         return
 
     def nextWell_fun(self):
@@ -216,7 +214,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
     def _refresh_buttons(self,):
         # get current label:
         label_id = self.wells_df.loc[self.well_name, 'well_label']
-        if label_id >= 0:
+        if label_id > 0:
             self.buttons[label_id].setChecked(True)
         else:
             for btn in self.buttons.values():
@@ -238,12 +236,12 @@ class WellsAnnotator(WellsVideoPlayerGUI):
     def keyPressEvent(self, event):
 
         key = event.key()
-        print(key)
+        # print(key)
 
         for btn_id, btn in self.buttons.items():
             if key == (Qt.Key_0+btn_id):
                 btn.toggle()
-                print(WELL_LABELS[btn_id])
+                # print(WELL_LABELS[btn_id])
                 return
         return
 
@@ -265,8 +263,8 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                     old_lab = self.wells_df.loc[self.well_name, 'well_label']
                     if old_lab == label_id:
                         # if the labeld was unchecked remove the label
-                        self.wells_df.loc[self.well_name, 'well_label'] = -1
-                print(self.wells_df)
+                        self.wells_df.loc[self.well_name, 'well_label'] = 0
+                # print(self.wells_df)
 
         for btn_id, btn in self.buttons.items():
             btn.setCheckable(True)

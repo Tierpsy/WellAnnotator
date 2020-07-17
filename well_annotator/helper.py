@@ -21,22 +21,22 @@ WELLS_ANNOTATIONS_DF_COLS = ['file_id',
                              'y_max',
                              'well_label']
 
-WELL_LABELS = {0: 'good',
-               1: 'misaligned',
-               2: 'precipitation',
-               3: 'contamination',
-               4: 'wet',
-               5: 'bad agar',
-               6: 'other bad',
+WELL_LABELS = {1: 'good',
+               2: 'misaligned',
+               3: 'precipitation',
+               4: 'contamination',
+               5: 'wet',
+               6: 'bad agar',
+               7: 'other bad',
                }
 
-BTN_COLOURS = {0: 'green',
-               1: 'darkRed',
-               2: 'yellow',
-               3: 'blue',
-               4: 'magenta',
-               5: 'darkCyan',
-               6: 'orange',
+BTN_COLOURS = {1: 'green',
+               2: 'darkRed',
+               3: 'yellow',
+               4: 'brown',
+               5: 'magenta',
+               6: 'darkCyan',
+               7: 'orange',
                }
 
 BUTTON_STYLESHEET_STR = (
