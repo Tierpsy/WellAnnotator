@@ -9,7 +9,7 @@ Point the GUI to a `MaskedVideos` folder (or to a subfolder of `MaskedVideos`, e
 
 * git clone, or download, this repository in a folder of your computer
 * activate the conda environment for Tierpsy
-* execute the well_annotator/WellAnnotator.py program
+* execute the `well_annotator/WellAnnotator.py` program
 
 Better installation instructions, and friendlier launcher, will follow soon.
 
@@ -41,6 +41,9 @@ Better installation instructions, and friendlier launcher, will follow soon.
 * save the progress on disk by clicking on the `Save` button
     * you will be prompted to save as you close the GUI. But it's safer to save often
 
+<img src="https://user-images.githubusercontent.com/33106690/87806850-6161ea80-c84f-11ea-96d0-b063d46664b2.gif" width="800">
+
+
 
 ## Future improvements
 * more keyboard shortcut
@@ -49,3 +52,4 @@ Better installation instructions, and friendlier launcher, will follow soon.
 * create an entry point for easier launching
 * at the moment the gui ignores any `is_bad_well` info from `/fov_wells` in the masked videos. Will fix this
 * create tool to apply the annotations back in the masked videos
+* better screen recording
