@@ -253,6 +253,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 for btn_id, btn in self.buttons.items():
                     if btn_id != label_id:
                         btn.setChecked(False)
+                    btn.repaint()
 
             if self.wells_df is not None:
                 # find well index
