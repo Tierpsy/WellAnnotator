@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
     QApplication,
     QPushButton,
     QMessageBox,
+    QCheckBox,
     QLabel)
 
 from helper import (
@@ -66,6 +67,13 @@ def _updateUI(ui):
     ui.label_vid_counter.setText("#/##")
     ui.horizontalLayout_5.addWidget(ui.label_vid_counter)
 
+    # 6th layer
+    ui.checkBox_prestim_only = QCheckBox(ui.centralWidget)
+    ui.checkBox_prestim_only.setObjectName("checkbox_prestim_only")
+    ui.checkBox_prestim_only.setText("prestim only")
+    ui.horizontalLayout_6.addWidget(ui.checkBox_prestim_only)
+    ui.checkBox_prestim_only.toggle()
+
     return ui
 
 
@@ -91,32 +99,34 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                         6: self.ui.badagar_well_b,
                         7: self.ui.otherbad_well_b}
 
+        # connect ui elements to functions
         LineEditDragDrop(
             self.ui.lineEdit_video,
             self.updateAnnotationsFile,
             check_good_input)
-
-        # connect ui elements to functions
         self.ui.next_vid_b.clicked.connect(self.next_video_fun)
         self.ui.prev_vid_b.clicked.connect(self.prev_video_fun)
         self.ui.save_b.clicked.connect(self.save_to_disk_fun)
+        self.ui.checkBox_prestim_only.clicked.connect(self.print_checkBox)
         self._setup_buttons()
 
         return
 
+    def print_checkBox(self):
+        "dummy debugging function"
+        print(self.ui.checkBox_prestim_only.isChecked())
+
     def updateAnnotationsFile(self, input_path):
+        is_prestim_only = self.ui.checkBox_prestim_only.isChecked()
         # get path to annotation file on disk
-        self.wellsanns_file = get_or_create_annotations_file(input_path)
+        self.wellsanns_file = get_or_create_annotations_file(
+            input_path, is_prestim_only=is_prestim_only)
         # read its content
         with pd.HDFStore(self.wellsanns_file) as fid:
             self.filenames_df = fid['/filenames_df'].copy()
             self.working_dir = Path(
                 fid.get_storer('filenames_df').attrs.working_dir)
             self.wells_annotations_df = fid['/wells_annotations_df'].copy()
-        # print(self.wellsanns_file)
-        # print(self.filenames_df)
-        # print(self.filenames_df['file_id'].min())
-        # print(self.wells_annotations_df)
 
         self.ui.lineEdit_video.setText(str(self.wellsanns_file))
 
@@ -129,10 +139,8 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         # print(f'file_id before updating: {self.current_file_id})')
         # store the previous video's annotations in self.wells_annotations_df
         if self.wells_df is not None:
-            # print('temp storing progress')
             self.store_progress()
-        # else:
-            # print('no progress to store yet')
+        # get the name of the next video to open
         vfile_to_open = self.get_vfilename_from_file_id(file_id_to_open)
         # use WellsVideoPlayer's
         super().updateVideoFile(vfile_to_open)
@@ -146,7 +154,6 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             # add labels column
             self.wells_df['well_label'] = 0
             self.wells_df['file_id'] = self.current_file_id
-        # print(f'file_id after updating: {self.current_file_id})')
         # update ui elements
         self.ui.label_vid_counter.setText(
             (f'{self.current_file_id+1}/'
@@ -172,8 +179,6 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         add wells_df to self.wells_annotations_df
         """
         # easy case: this is the first time we see these wells
-        # print(f'check if {self.current_file_id} is in ')
-        # print(self.wells_annotations_df['file_id'])
         if (self.current_file_id
                 not in self.wells_annotations_df['file_id'].values):
             # print('appending')
@@ -187,7 +192,6 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 )
         else:
             # these wells were seen before. update them
-            # print('updating')
             idx = self.wells_annotations_df['file_id'] == self.current_file_id
             # next line assumes wells order not to have changed
             # since wells_df was first appendsed. sounds reasonable enough
@@ -197,17 +201,31 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 ), 'wells order not matching'
             self.wells_annotations_df.loc[idx, 'well_label'] = (
                 self.wells_df['well_label'].values)
-        # print('wells_annotations_df:')
-        # print(self.wells_annotations_df)
         return
 
     def nextWell_fun(self):
-        super().nextWell_fun()
+        # these next two lines work, but don't allow me to go to
+        # next video when out of wells
+        # super().nextWell_fun()
+        # self._refresh_buttons()
+        nwells = self.ui.wells_comboBox.count()
+        if self.ui.wells_comboBox.currentIndex() < (nwells - 1):
+            # increase index
+            self.ui.wells_comboBox.setCurrentIndex(
+                self.ui.wells_comboBox.currentIndex() + 1)
+        else:
+            self.next_video_fun()
         self._refresh_buttons()
         return
 
     def prevWell_fun(self):
-        super().prevWell_fun()
+        # super().prevWell_fun()
+        # self._refresh_buttons()
+        if self.ui.wells_comboBox.currentIndex() > 0:
+            self.ui.wells_comboBox.setCurrentIndex(
+                self.ui.wells_comboBox.currentIndex() - 1)
+        else:
+            self.prev_video_fun()
         self._refresh_buttons()
         return
 
@@ -234,10 +252,9 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         return
 
     def keyPressEvent(self, event):
-
+        # read pressed key
         key = event.key()
-        # print(key)
-
+        # toggle the right button
         for btn_id, btn in self.buttons.items():
             if key == (Qt.Key_0+btn_id):
                 btn.toggle()
@@ -246,9 +263,18 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         return
 
     def _setup_buttons(self):
+        """
+        Control button appearance and behaviour
+        """
         stylesheet_str = BUTTON_STYLESHEET_STR
 
+        # function called when a button is activated
         def _make_label(label_id, checked):
+            """
+            if function called when checking a button,
+            loop through all the other buttons and uncheck those.
+            And set well's label to be this checked button.'
+            If unchecking a checked button, delete the existing annotation"""
             if checked:
                 for btn_id, btn in self.buttons.items():
                     if btn_id != label_id:
@@ -265,8 +291,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                     if old_lab == label_id:
                         # if the labeld was unchecked remove the label
                         self.wells_df.loc[self.well_name, 'well_label'] = 0
-                # print(self.wells_df)
-
+        # connect ui elements to callback function
         for btn_id, btn in self.buttons.items():
             btn.setCheckable(True)
             btn.setStyleSheet(stylesheet_str % BTN_COLOURS[btn_id])

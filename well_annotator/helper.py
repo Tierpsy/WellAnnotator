@@ -11,6 +11,7 @@ import datetime
 import pandas as pd
 from pathlib import Path
 
+
 WELLS_ANNOTATION_EXT = '_wells_annotations.hdf5'
 FILES_DF_COLS = ['file_id', 'filename']
 WELLS_ANNOTATIONS_DF_COLS = ['file_id',
@@ -43,7 +44,6 @@ BUTTON_STYLESHEET_STR = (
     "QPushButton:checked "
     + "{border: 2px solid; border-radius: 6px; background-color: %s }"
     )
-
 
 
 def _is_child_of_maskedvideos(input_path: Path):
@@ -166,7 +166,7 @@ def name_new_wellsanns_file(working_dir: Path):
     return new_wellsanns_path
 
 
-def get_list_masked_videos(working_dir: Path):
+def get_list_masked_videos(working_dir: Path, is_prestim_only: bool = True):
     """
     Get list of *.hdf5 files in working_dir. filter out any wells_annotations
 
@@ -186,15 +186,19 @@ def get_list_masked_videos(working_dir: Path):
     fnames = working_dir.rglob('*.hdf5')
     # jsut make sure that for some weird reason there is not wellsanns file...
     fnames = [f for f in fnames if not f.name.endswith(WELLS_ANNOTATION_EXT)]
+    if is_prestim_only:
+        fnames = [f for f in fnames if 'prestim' in str(f)]
 
     return fnames
 
 
-def initialise_annotations_file(working_dir: Path):
-    # get name to the file we need to create
+def initialise_annotations_file(working_dir: Path,
+                                is_prestim_only: bool = True):
+    # get name of the file we need to create
     wellsanns_fname = name_new_wellsanns_file(working_dir)
     # get list of files in working_dir
-    masked_fnames = get_list_masked_videos(working_dir)
+    masked_fnames = get_list_masked_videos(working_dir,
+                                           is_prestim_only=is_prestim_only)
     # make it relative
     masked_fnames = [str(f.relative_to(working_dir)) for f in masked_fnames]
     # create files dataframe
@@ -220,7 +224,8 @@ def initialise_annotations_file(working_dir: Path):
     return wellsanns_fname
 
 
-def get_or_create_annotations_file(input_path: Path):
+def get_or_create_annotations_file(input_path: Path,
+                                   is_prestim_only: bool = True):
     # fix type
     if isinstance(input_path, str):
         input_path = Path(input_path)
@@ -230,11 +235,12 @@ def get_or_create_annotations_file(input_path: Path):
     if not input_path.is_dir():
         wellsanns_fname = input_path
     else:
-        # if a file exists, get its name
+        # if a file exists get its name
         wellsanns_fname = find_wellsanns_file_in_dir(input_path)
         # if not, create it
         if wellsanns_fname is None:
-            wellsanns_fname = initialise_annotations_file(input_path)
+            wellsanns_fname = initialise_annotations_file(
+                input_path, is_prestim_only=is_prestim_only)
 
     return wellsanns_fname
 
@@ -244,7 +250,8 @@ if __name__ == "__main__":
     input_str = '/Users/lferiani/work_repos/WellAnnotator/data/MaskedVideos'
     # input_str = '/Users/lferiani/work_repos/WellAnnotator/data/MaskedVideos/data_20200715_152507_wells_annotations.hdf5'
     annotations_file = get_or_create_annotations_file(input_str)
-
+    # out = ask_if_prestim_only()
+    # print(out)
 
 
 
