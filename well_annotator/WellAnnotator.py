@@ -226,6 +226,9 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 self.ui.wells_comboBox.currentIndex() - 1)
         else:
             self.prev_video_fun()
+            # go to last well of previous video
+            self.ui.wells_comboBox.setCurrentIndex(
+                self.ui.wells_comboBox.count() - 1)
         self._refresh_buttons()
         return
 
