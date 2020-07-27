@@ -162,6 +162,8 @@ def name_new_wellsanns_file(working_dir: Path):
     new_wellsanns_fname += (datetime_str + WELLS_ANNOTATION_EXT)
     # and its path
     new_wellsanns_path = working_dir / new_wellsanns_fname
+    # then move it to auxiliary files
+    new_wellsanns_path = masked2aux(new_wellsanns_path)
 
     return new_wellsanns_path
 
@@ -205,6 +207,7 @@ def initialise_annotations_file(working_dir: Path,
     fnames_df = pd.DataFrame({'file_id': range(len(masked_fnames)),
                               'filename': masked_fnames})
     # write df in file, delete anything inside it
+    wellsanns_fname.parent.mkdir(exist_ok=True, parents=True)
     fnames_df.to_hdf(wellsanns_fname,
                      key='/filenames_df',
                      index=False,
@@ -224,6 +227,10 @@ def initialise_annotations_file(working_dir: Path,
     return wellsanns_fname
 
 
+def masked2aux(input_path):
+    return Path(str(input_path).replace('MaskedVideos', 'AuxiliaryFiles'))
+
+
 def get_or_create_annotations_file(input_path: Path,
                                    is_prestim_only: bool = True):
     # fix type
@@ -236,7 +243,8 @@ def get_or_create_annotations_file(input_path: Path,
         wellsanns_fname = input_path
     else:
         # if a file exists get its name
-        wellsanns_fname = find_wellsanns_file_in_dir(input_path)
+        target_dir = masked2aux(input_path)
+        wellsanns_fname = find_wellsanns_file_in_dir(target_dir)
         # if not, create it
         if wellsanns_fname is None:
             wellsanns_fname = initialise_annotations_file(
