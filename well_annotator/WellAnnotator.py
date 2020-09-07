@@ -6,6 +6,8 @@ Created on Wed Jul 15 16:12:37 2020
 @author: lferiani
 """
 
+# TODO: look into opening all the videos from a single plate, and allow to move within the plates
+
 import sys
 import pandas as pd
 
@@ -94,7 +96,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self.buttons = {1: self.ui.good_well_b,
                         2: self.ui.misaligned_well_b,
                         3: self.ui.precipitation_well_b,
-                        4: self.ui.contamination_well_b,
+                        4: self.ui.contamination_well_b, # bacterial/fungal?
                         5: self.ui.wet_well_b,
                         6: self.ui.badagar_well_b,
                         7: self.ui.otherbad_well_b}
@@ -107,7 +109,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self.ui.next_vid_b.clicked.connect(self.next_video_fun)
         self.ui.prev_vid_b.clicked.connect(self.prev_video_fun)
         self.ui.save_b.clicked.connect(self.save_to_disk_fun)
-        self.ui.checkBox_prestim_only.clicked.connect(self.print_checkBox)
+        # self.ui.checkBox_prestim_only.clicked.connect(self.print_checkBox)
         self._setup_buttons()
 
         return
@@ -166,11 +168,29 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             return 0
         else:
             ind = self.wells_annotations_df['well_label'] == 0
-            left_behind = self.wells_annotations_df[ind]
-            return left_behind['file_id'].min()
+            if ind.any():
+                left_behind = self.wells_annotations_df[ind]
+                return left_behind['file_id'].min()
+            else:
+                new_file_id = self.wells_annotations_df['file_id'].max() + 1
+                if new_file_id in self.filenames_df['file_id']:
+                    return new_file_id
+                else:
+                    return 0
 
     def get_vfilename_from_file_id(self, file_id):
-        fname = self.working_dir / self.filenames_df.loc[file_id, 'filename']
+        try:
+            fname = self.filenames_df.loc[file_id, 'filename']
+        except Exception as EE:
+            print(f'Failed to find filename of file_id {file_id}')
+            print('This is how self.filenames_df look like:')
+            print(self.filenames_df)
+            print('Details of the exception:')
+            print(type(EE))    # the exception instance
+            print(EE.args)     # arguments stored in .args
+            print(EE)
+            raise
+        fname = self.working_dir / fname
         fname = str(fname)
         return fname
 
