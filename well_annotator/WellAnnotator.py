@@ -18,6 +18,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication,
     QPushButton,
+    QFileDialog,
     QMessageBox,
     QCheckBox,
     QLabel)
@@ -106,6 +107,8 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             self.ui.lineEdit_video,
             self.updateAnnotationsFile,
             check_good_input)
+        self.ui.pushButton_video.clicked.disconnect()
+        self.ui.pushButton_video.clicked.connect(self.getAnnotationsFile)
         self.ui.next_vid_b.clicked.connect(self.next_video_fun)
         self.ui.prev_vid_b.clicked.connect(self.prev_video_fun)
         self.ui.save_b.clicked.connect(self.save_to_disk_fun)
@@ -117,6 +120,14 @@ class WellsAnnotator(WellsVideoPlayerGUI):
     def print_checkBox(self):
         "dummy debugging function"
         print(self.ui.checkBox_prestim_only.isChecked())
+
+    def getAnnotationsFile(self):
+        print('choosing annotations file')
+        annfilename, _ = QFileDialog.getOpenFileName(
+            self, "Find HDF5 annotations file", self.working_dir,
+            "HDF5 files (*wells_annotations.hdf5);; All files (*)")
+        _ = check_good_input(annfilename)
+        self.updateAnnotationsFile(annfilename)
 
     def updateAnnotationsFile(self, input_path):
         is_prestim_only = self.ui.checkBox_prestim_only.isChecked()
@@ -173,16 +184,17 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 return left_behind['file_id'].min()
             else:
                 new_file_id = self.wells_annotations_df['file_id'].max() + 1
-                if new_file_id in self.filenames_df['file_id']:
+                if new_file_id in self.filenames_df['file_id'].values:
                     return new_file_id
                 else:
                     return 0
 
-    def get_vfilename_from_file_id(self, file_id):
+    def get_vfilename_from_file_id(self, file_id_to_open):
         try:
-            fname = self.filenames_df.loc[file_id, 'filename']
+            fname = self.filenames_df.set_index(
+                'file_id').loc[file_id_to_open, 'filename']
         except Exception as EE:
-            print(f'Failed to find filename of file_id {file_id}')
+            print(f'Failed to find filename of file_id {file_id_to_open}')
             print('This is how self.filenames_df look like:')
             print(self.filenames_df)
             print('Details of the exception:')

@@ -155,7 +155,7 @@ def _updateUI(ui):
     # ui.horizontalLayout.removeWidget(ui.lineEdit_video)
     ui.horizontalLayout_6.addWidget(ui.lineEdit_video)
 
-    # ui.horizontalLayout.removeWidget(ui.pushButton_video)
+    ui.horizontalLayout.removeWidget(ui.pushButton_video)
     ui.horizontalLayout_6.addWidget(ui.pushButton_video)
 
     return ui
