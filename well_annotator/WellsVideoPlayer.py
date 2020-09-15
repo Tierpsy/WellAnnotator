@@ -190,6 +190,11 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         self.ui.next_well_b.clicked.connect(self.nextWell_fun)
         self.ui.prev_well_b.clicked.connect(self.prevWell_fun)
 
+        self.mainImage._view.wheelEvent = self.do_nothing
+
+    def do_nothing(self, event):
+        pass
+
     def wheelEvent(self, event):
         delta = event.pixelDelta().y()
         # -1, 0, +1, cool syntax:
@@ -197,6 +202,7 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         current = self.frame_number
         candidate = max(min(current + delta, self.tot_frames), 0)
         self.ui.spinBox_frame.setValue(candidate)
+        return
 
     def keyPressEvent(self, event):
         print(self.vfilename)
