@@ -124,7 +124,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
     def getAnnotationsFile(self):
         print('choosing annotations file')
         annfilename, _ = QFileDialog.getOpenFileName(
-            self, "Find HDF5 annotations file", self.working_dir,
+            self, "Find HDF5 annotations file", str(self.working_dir),
             "HDF5 files (*wells_annotations.hdf5);; All files (*)")
         _ = check_good_input(annfilename)
         self.updateAnnotationsFile(annfilename)
