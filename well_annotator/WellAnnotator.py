@@ -85,7 +85,8 @@ def _updateUI(ui):
     # 7th layer widgets
     ui.rescan_dir_b = QPushButton(ui.centralWidget)
     ui.horizontalLayout_7.addWidget(ui.rescan_dir_b)
-    ui.rescan_dir_b.setText("Rescan working directory")
+    ui.rescan_dir_b.setText(
+        "Rescan working directory (only adds vids, cannot remove them!!!)")
     ui.checkBox_prestim_only = QCheckBox(ui.centralWidget)
     ui.checkBox_prestim_only.setObjectName("checkbox_prestim_only")
     ui.checkBox_prestim_only.setText("prestim only")
