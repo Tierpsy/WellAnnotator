@@ -9,6 +9,7 @@ Created on Wed Jul 15 16:12:37 2020
 # TODO: look into opening all the videos from a single plate, and allow to move within the plates
 
 import sys
+import h5py
 import pandas as pd
 
 from pathlib import Path
@@ -17,6 +18,7 @@ from functools import partial
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication,
+    QHBoxLayout,
     QPushButton,
     QFileDialog,
     QMessageBox,
@@ -24,7 +26,9 @@ from PyQt5.QtWidgets import (
     QLabel)
 
 from helper import (
-    check_good_input, get_or_create_annotations_file,
+    check_good_input,
+    get_or_create_annotations_file,
+    get_list_masked_videos,
     WELLS_ANNOTATIONS_DF_COLS,
     BUTTON_STYLESHEET_STR,
     BTN_COLOURS,
@@ -70,11 +74,22 @@ def _updateUI(ui):
     ui.label_vid_counter.setText("#/##")
     ui.horizontalLayout_5.addWidget(ui.label_vid_counter)
 
-    # 6th layer
+    # 6th layer unmodified
+
+    # add 7th layer
+    ui.horizontalLayout_7 = QHBoxLayout()
+    ui.horizontalLayout_7.setContentsMargins(11, 11, 11, 11)
+    ui.horizontalLayout_7.setSpacing(6)
+    ui.horizontalLayout_7.setObjectName("horizontalLayout_7")
+    ui.verticalLayout.addLayout(ui.horizontalLayout_7)
+    # 7th layer widgets
+    ui.rescan_dir_b = QPushButton(ui.centralWidget)
+    ui.horizontalLayout_7.addWidget(ui.rescan_dir_b)
+    ui.rescan_dir_b.setText("Rescan working directory")
     ui.checkBox_prestim_only = QCheckBox(ui.centralWidget)
     ui.checkBox_prestim_only.setObjectName("checkbox_prestim_only")
     ui.checkBox_prestim_only.setText("prestim only")
-    ui.horizontalLayout_6.addWidget(ui.checkBox_prestim_only)
+    ui.horizontalLayout_7.addWidget(ui.checkBox_prestim_only)
     ui.checkBox_prestim_only.toggle()
 
     return ui
@@ -112,6 +127,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self.ui.next_vid_b.clicked.connect(self.next_video_fun)
         self.ui.prev_vid_b.clicked.connect(self.prev_video_fun)
         self.ui.save_b.clicked.connect(self.save_to_disk_fun)
+        self.ui.rescan_dir_b.clicked.connect(self.rescan_working_dir)
         # self.ui.checkBox_prestim_only.clicked.connect(self.print_checkBox)
         self._setup_buttons()
 
@@ -142,6 +158,13 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             self.wells_annotations_df = fid['/wells_annotations_df'].copy()
 
         self.ui.lineEdit_video.setText(str(self.wellsanns_file))
+
+        # if loading a hdf5 with other than prestim vids,
+        # set is_prestim false and disable checkBox_prestim_only
+        if not all(self.filenames_df['filename'].str.contains('prestim')):
+            self.ui.checkBox_prestim_only.setChecked(False)
+            self.ui.checkBox_prestim_only.setEnabled(False)
+            print('set prestim only false')
 
         file_id_to_open = self.get_first_file_to_process()
         self.updateVideoFile(file_id_to_open)
@@ -205,6 +228,47 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         fname = self.working_dir / fname
         fname = str(fname)
         return fname
+
+    def rescan_working_dir(self):
+        """
+        Scan the working_dir, add any new files to the filenames_df DataFrame.
+        If is_prestim_only is unchecked, this will add all the non-prestim
+        videos as well!
+        """
+        # do nothing if you click it before loading a video!
+        if self.working_dir is None:
+            return
+        # find all masked videos in working_dir (accounting for prestim flag)
+        is_prestim_only = self.ui.checkBox_prestim_only.isChecked()
+        masked_fnames = get_list_masked_videos(
+            self.working_dir, is_prestim_only=is_prestim_only)
+        # relative, and string
+        masked_fnames = [
+            str(f.relative_to(self.working_dir)) for f in masked_fnames]
+        # remove the ones that already existed
+        new_masked_fnames = list(
+            set(masked_fnames) - set(self.filenames_df['filename'].to_list()))
+        # check for early exit
+        if len(new_masked_fnames) == 0:
+            print('No new files found')
+            return
+        # if new files were found
+        n_new_files = len(new_masked_fnames)
+        prev_max_id = self.filenames_df['file_id'].max()
+        prev_max_index = self.filenames_df.index.max()
+        new_file_ids = [prev_max_id + 1 + cc for cc in range(n_new_files)]
+        new_index = [prev_max_index + 1 + cc for cc in range(n_new_files)]
+        new_filenames_df = pd.DataFrame(
+            {'file_id': new_file_ids, 'filename': new_masked_fnames},
+            index=new_index
+            )
+        print(f'{n_new_files} new files found')
+        self.filenames_df = pd.concat(
+            [self.filenames_df, new_filenames_df], axis=0)
+
+        self.updateVideoFile(self.current_file_id)
+
+        return
 
     def store_progress(self):
         """
@@ -340,6 +404,14 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             key='/wells_annotations_df',
             index=False,
             mode='r+')
+        self.filenames_df.to_hdf(
+            self.wellsanns_file,
+            key='/filenames_df',
+            index=False,
+            mode='r+')
+        # add working_dir
+        with h5py.File(self.wellsanns_file, 'r+') as fid:
+            fid["/filenames_df"].attrs["working_dir"] = str(self.working_dir)
         return
 
     def closeEvent(self, event):
