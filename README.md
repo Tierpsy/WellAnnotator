@@ -19,7 +19,7 @@ environment is active)
 
 You also have acess to two command-line tools:
 * `rebase_annotations` to use if you have moved your files to a different drive or folder, and so the path to the annotated files has changed. Type `rebase_annotations --help` for information on how to use the tool correctly.
-* `read_working_dir` this allows you to read the common path to the annotated videos, and is the part that gets modified with `rebase_annotations`. Type `rebase_annotations --help` for information on how to use the tool correctly.
+* `read_working_dir` this allows you to read the common path to the annotated videos, and is the part that gets modified with `rebase_annotations`. Type `read_working_dir --help` for information on how to use the tool correctly.
 
 
 ## How to use
