@@ -8,10 +8,18 @@ Point the GUI to a `MaskedVideos` folder (or to a subfolder of `MaskedVideos`, e
 ## Installation
 
 * git clone, or download, this repository in a folder of your computer
+* open a terminal window in that folder
 * activate the conda environment for Tierpsy
-* execute the `well_annotator/WellAnnotator.py` program
+* `conda install fire -c conda-forge`
+* `pip install -e .` (the full stop is important)
 
-Better installation instructions, and friendlier launcher, will follow soon.
+Now that the GUI is installed, you can launch it by executing
+`well_annotator` in your terminal window (provided the tierpsy
+environment is active)
+
+You also have acess to two command-line tools:
+* `rebase_annotations` to use if you have moved your files to a different drive or folder, and so the path to the annotated files has changed. Type `rebase_annotations --help` for information on how to use the tool correctly.
+* `read_working_dir` this allows you to read the common path to the annotated videos, and is the part that gets modified with `rebase_annotations`. Type `rebase_annotations --help` for information on how to use the tool correctly.
 
 
 ## How to use

@@ -253,6 +253,76 @@ def get_or_create_annotations_file(input_path: Path,
     return wellsanns_fname
 
 
+def _rebase_annotations(wells_annotations_filename: Path,
+                        new_working_dir: Path):
+
+    # fix type. let's use paths even if we could do with strings, can help
+    # in the future if I expand
+    if isinstance(wells_annotations_filename, str):
+        wells_annotations_filename = Path(wells_annotations_filename)
+    if isinstance(new_working_dir, str):
+        new_working_dir = Path(new_working_dir)
+
+    # do some checks
+    assert wells_annotations_filename.exists(), 'Annotations file not found'
+    assert new_working_dir.exists(), 'new_working_dir not found'
+    # should I check that the target files are found in the new path? dunno yet
+
+    # actual body of the function
+    with h5py.File(wells_annotations_filename, 'r+') as fid:
+        # store old one as well, and print it out to the user
+        old_working_dir = fid["/filenames_df"].attrs["working_dir"]
+        print(f"old working directory: {old_working_dir}")
+        fid["/filenames_df"].attrs["previous_working_dir"] = old_working_dir
+        # write the new one
+        fid["/filenames_df"].attrs["working_dir"] = str(new_working_dir)
+
+    return
+
+
+def rebase_annotations():
+    """
+    rebase_annotations In the well annotations hdf5 file, the video name is
+        only saved relative to the working directory. The working directory
+        is saved as an attribute to the /filenames_df table.
+        This can cause issues if a user decides to move data to a different
+        drive or a different directory.
+        This utility allows the user to change the working directory.
+
+    Parameters
+    ----------
+    wells_annotations_filename : Path
+        Path (either absolute or relative to the folder from where you're
+        calling the tool) to the annotations hdf5 file
+    new_working_dir : Path
+        Path to the new working directory
+
+    """
+    import fire
+    fire.Fire(_rebase_annotations)
+
+
+def _read_working_dir(wells_annotations_filename):
+    with h5py.File(wells_annotations_filename, 'r+') as fid:
+        print(fid["/filenames_df"].attrs["working_dir"])
+    return
+
+
+def read_working_dir():
+    """
+    read_working_dir Quick tool to read the working directory of a wells
+        annotation hdf5 file.
+
+    Parameters
+    ----------
+    wells_annotations_filename : Path
+        Path (either absolute or relative to the folder from where you're
+        calling the tool) to the annotations hdf5 file
+    """
+    import fire
+    fire.Fire(_read_working_dir)
+
+
 if __name__ == "__main__":
 
     input_str = '/Users/lferiani/work_repos/WellAnnotator/data/MaskedVideos'

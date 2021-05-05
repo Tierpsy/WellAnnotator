@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout)
 # from PyQt.QtWidgets import QCheckBox, QMessageBox
 
-from HDF5VideoPlayer import HDF5VideoPlayerGUI
+from well_annotator.HDF5VideoPlayer import HDF5VideoPlayerGUI
 
 from tierpsy.analysis.split_fov.FOVMultiWellsSplitter import (
     FOVMultiWellsSplitter)

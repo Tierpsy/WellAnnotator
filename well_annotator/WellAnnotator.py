@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
     QCheckBox,
     QLabel)
 
-from helper import (
+from well_annotator.helper import (
     check_good_input,
     get_or_create_annotations_file,
     get_list_masked_videos,
@@ -33,8 +33,8 @@ from helper import (
     BUTTON_STYLESHEET_STR,
     BTN_COLOURS,
     )
-from HDF5VideoPlayer import LineEditDragDrop
-from WellsVideoPlayer import WellsVideoPlayerGUI
+from well_annotator.HDF5VideoPlayer import LineEditDragDrop
+from well_annotator.WellsVideoPlayer import WellsVideoPlayerGUI
 
 
 def _updateUI(ui):
@@ -431,10 +431,17 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         return
 
 
-if __name__ == '__main__':
+def launch_app():
     app = QApplication(sys.argv)
-
     ui = WellsAnnotator()
     ui.show()
-
     sys.exit(app.exec_())
+
+
+def main():
+    import fire
+    fire.Fire(launch_app)
+
+
+if __name__ == '__main__':
+    launch_app()
