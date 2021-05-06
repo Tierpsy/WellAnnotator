@@ -10,6 +10,7 @@ Created on Wed Jul 15 16:12:37 2020
 
 import sys
 import h5py
+import warnings
 import pandas as pd
 
 from pathlib import Path
@@ -32,6 +33,7 @@ from well_annotator.helper import (
     WELLS_ANNOTATIONS_DF_COLS,
     BUTTON_STYLESHEET_STR,
     BTN_COLOURS,
+    WELL_LABELS,
     )
 from well_annotator.HDF5VideoPlayer import LineEditDragDrop
 from well_annotator.WellsVideoPlayer import WellsVideoPlayerGUI
@@ -92,6 +94,10 @@ def _updateUI(ui):
     ui.checkBox_prestim_only.setText("prestim only")
     ui.horizontalLayout_7.addWidget(ui.checkBox_prestim_only)
     ui.checkBox_prestim_only.toggle()
+    ui.export_csv_b = QPushButton(ui.centralWidget)
+    ui.horizontalLayout_7.addWidget(ui.export_csv_b)
+    ui.export_csv_b.setText(
+        "Export to csv")
 
     return ui
 
@@ -129,6 +135,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self.ui.prev_vid_b.clicked.connect(self.prev_video_fun)
         self.ui.save_b.clicked.connect(self.save_to_disk_fun)
         self.ui.rescan_dir_b.clicked.connect(self.rescan_working_dir)
+        self.ui.export_csv_b.clicked.connect(self.export_csv_fun)
         # self.ui.checkBox_prestim_only.clicked.connect(self.print_checkBox)
         self._setup_buttons()
 
@@ -413,6 +420,53 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         # add working_dir
         with h5py.File(self.wellsanns_file, 'r+') as fid:
             fid["/filenames_df"].attrs["working_dir"] = str(self.working_dir)
+        return
+
+    def export_csv_fun(self):
+        self.store_progress()
+        # prepare a single spreadsheet
+        out_df = pd.merge(
+            left=self.filenames_df,
+            right=self.wells_annotations_df,
+            on='file_id',
+            how='right',
+            validate='1:m',
+            sort=False)
+        # add the working directory
+        out_df['filename'] = f'{self.working_dir}/' + out_df['filename']
+        # add an explanation for the labels
+        out_df['label_meaning'] = out_df['well_label'].map(WELL_LABELS)
+        out_df['label_meaning'].fillna(value='not annotated', inplace=True)
+        # extract the imgstore name, if all files are indeed from loopbio
+        if out_df['filename'].apply(
+                lambda x: 'metadata' in Path(x).name).all():
+            out_df.insert(
+                loc=2,
+                column='imgstore_name',
+                value=out_df['filename'].apply(lambda x: Path(x).parent.name))
+        # do some checks
+        warn_msg = ''
+        if out_df['well_label'].isin([0]).any():
+            warn_msg += 'Some wells were not annotated!\n'
+        if (~self.filenames_df['file_id'].isin(out_df['file_id'])).any():
+            warn_msg += 'Not all videos have been annotated!\n'
+        if len(warn_msg) > 0:
+            warn_msg += '\nDo you want to export anyway?'
+
+            reply = QMessageBox.question(
+                self,
+                'Warning',
+                warn_msg,
+                QMessageBox.No | QMessageBox.Yes,
+                QMessageBox.Yes)
+            if reply != QMessageBox.Yes:
+                return
+
+        # create out name
+        out_fname = self.wellsanns_file.with_suffix('.csv')
+        # save
+        out_df.drop(columns=['file_id']).to_csv(out_fname, index=False)
+        print(f'csv exported to {out_fname}')
         return
 
     def closeEvent(self, event):
