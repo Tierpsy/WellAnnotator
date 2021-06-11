@@ -52,9 +52,9 @@ pip install -e .
 | 6 | bad agar |
 | 7 | other bad |
 
-* move to the next/previous well with the `Next Well`/`Previous Well` buttons, or with the dropdown menu
+* move to the next/previous well with the `Next Well`/`Previous Well` buttons, or with the dropdown menu, or with the `+`/`-` keys.
     * note that the well progression indicator will change
-* when you've annotated all the wells in a file, use the `Next Video`/`Previous Video` button to move to the next video
+* when you've annotated all the wells in a file, use the `Next Video`/`Previous Video` button or the `>`/`<` key to move to a different video
     * this will take a couple of seconds, more if you're working on remote data
 * save the progress on disk by clicking on the `Save` button
     * you will be prompted to save as you close the GUI. But it's safer to save often

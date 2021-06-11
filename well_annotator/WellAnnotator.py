@@ -307,10 +307,10 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 self.wells_df['well_label'].values)
         return
 
-    def nextWell_fun(self):
+    def next_well_fun(self):
         # these next two lines work, but don't allow me to go to
         # next video when out of wells
-        # super().nextWell_fun()
+        # super().next_well_fun()
         # self._refresh_buttons()
         nwells = self.ui.wells_comboBox.count()
         if self.ui.wells_comboBox.currentIndex() < (nwells - 1):
@@ -322,8 +322,8 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self._refresh_buttons()
         return
 
-    def prevWell_fun(self):
-        # super().prevWell_fun()
+    def prev_well_fun(self):
+        # super().prev_well_fun()
         # self._refresh_buttons()
         if self.ui.wells_comboBox.currentIndex() > 0:
             self.ui.wells_comboBox.setCurrentIndex(
@@ -361,12 +361,29 @@ class WellsAnnotator(WellsVideoPlayerGUI):
     def keyPressEvent(self, event):
         # read pressed key
         key = event.key()
-        # toggle the right button
-        for btn_id, btn in self.buttons.items():
-            if key == (Qt.Key_0+btn_id):
-                btn.toggle()
-                # print(WELL_LABELS[btn_id])
-                return
+
+        # Move to next track when pressed:  > or .
+        if key == Qt.Key_Equal or key == Qt.Key_Plus:
+            self.next_well_fun()
+
+        # Move to next track when pressed: < or ,
+        elif key == Qt.Key_Minus or key == Qt.Key_Underscore:
+            self.prev_well_fun()
+
+        elif key == Qt.Key_Greater or key == Qt.Key_Period:
+            self.next_video_fun()
+
+        # Move to next track when pressed: < or ,
+        elif key == Qt.Key_Less or key == Qt.Key_Comma:
+            self.prev_video_fun()
+
+        else:
+            # toggle the right button
+            for btn_id, btn in self.buttons.items():
+                if key == (Qt.Key_0+btn_id):
+                    btn.toggle()
+                    # print(WELL_LABELS[btn_id])
+                    return
         return
 
     def _setup_buttons(self):

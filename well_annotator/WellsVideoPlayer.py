@@ -187,8 +187,8 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         self.ui.wells_comboBox.currentIndexChanged.connect(self.updateImGroup)
         # self.ui.wells_comboBox.activated.connect(self.updateImGroup)
 
-        self.ui.next_well_b.clicked.connect(self.nextWell_fun)
-        self.ui.prev_well_b.clicked.connect(self.prevWell_fun)
+        self.ui.next_well_b.clicked.connect(self.next_well_fun)
+        self.ui.prev_well_b.clicked.connect(self.prev_well_fun)
 
         self.mainImage._view.wheelEvent = self.do_nothing
 
@@ -288,14 +288,14 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
 
         return
 
-    def nextWell_fun(self):
+    def next_well_fun(self):
         self.ui.wells_comboBox.setCurrentIndex(
             min(self.ui.wells_comboBox.currentIndex() + 1,
                 self.ui.wells_comboBox.count()-1))
 
         return
 
-    def prevWell_fun(self):
+    def prev_well_fun(self):
         self.ui.wells_comboBox.setCurrentIndex(
             max(0, self.ui.wells_comboBox.currentIndex() - 1))
         return
