@@ -40,7 +40,15 @@ pip install -e .
 * the GUI will present you with the `full_data` video of each of the wells of the first video
 * scroll through the video with the scroll bar below the video, or with the scrollwheel of your mouse
     * don't place the cursor on the video while scrolling, as there is a bug at the moment that will also make the view zoom
-* annotate a well by either clicking the appropriate button, or use numbers on your keyboard:
+* annotate a well by clicking the appropriate button
+* move to the next/previous well with the `Next Well`/`Previous Well` buttons
+    * note that the well progression indicator will change
+* when you've annotated all the wells in a file, use the `Next Video`/`Previous Video` button
+    * this will take a couple of seconds, more if you're working on remote data
+* save the progress on disk by clicking on the `Save` button
+    * you will be prompted to save as you close the GUI. But it's safer to save often!
+
+### Keyboard Shortcuts
 
 | key | label |
 | -:|:-----|
@@ -51,13 +59,10 @@ pip install -e .
 | 5 | wet |
 | 6 | bad agar |
 | 7 | other bad |
-
-* move to the next/previous well with the `Next Well`/`Previous Well` buttons, or with the dropdown menu, or with the `+`/`-` keys.
-    * note that the well progression indicator will change
-* when you've annotated all the wells in a file, use the `Next Video`/`Previous Video` button or the `>`/`<` key to move to a different video
-    * this will take a couple of seconds, more if you're working on remote data
-* save the progress on disk by clicking on the `Save` button
-    * you will be prompted to save as you close the GUI. But it's safer to save often
+| - (or _ ) | previous well |
+| + (or = ) | next well |
+| < (or , ) | previous video |
+| > (or . ) | next video |
 
 <img src="https://user-images.githubusercontent.com/33106690/87806850-6161ea80-c84f-11ea-96d0-b063d46664b2.gif" width="800">
 
