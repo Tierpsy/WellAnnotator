@@ -38,6 +38,10 @@ def _updateUI(ui):
     ui.label_fps.deleteLater()
     ui.label_fps = None
 
+    ui.horizontalLayout_3.removeWidget(ui.playButton)
+    ui.playButton.deleteLater()
+    ui.playButton = None
+
     ui.horizontalLayout_3.removeWidget(ui.spinBox_step)
     ui.spinBox_step.deleteLater()
     ui.spinBox_step = None
