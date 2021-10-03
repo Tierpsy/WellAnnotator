@@ -29,6 +29,8 @@ WELL_LABELS = {1: 'good',
                5: 'wet',
                6: 'bad agar',
                7: 'other bad',
+               8: 'bad lawns',
+               9: 'bad worms',
                }
 
 BTN_COLOURS = {1: 'green',
@@ -38,6 +40,8 @@ BTN_COLOURS = {1: 'green',
                5: 'magenta',
                6: 'darkCyan',
                7: 'orange',
+               8: 'purple',
+               9: 'red',
                }
 
 BUTTON_STYLESHEET_STR = (
@@ -201,6 +205,10 @@ def initialise_annotations_file(working_dir: Path,
     # get list of files in working_dir
     masked_fnames = get_list_masked_videos(working_dir,
                                            is_prestim_only=is_prestim_only)
+    ass_msg = 'Could not find any video, aborting. '
+    if is_prestim_only:
+        ass_msg += 'You could retry without `prestimulus only`.'
+    assert len(masked_fnames) > 0, ass_msg
     # make it relative
     masked_fnames = [str(f.relative_to(working_dir)) for f in masked_fnames]
     # create files dataframe

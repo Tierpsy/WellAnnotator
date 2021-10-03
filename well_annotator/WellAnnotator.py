@@ -70,6 +70,14 @@ def _updateUI(ui):
     ui.horizontalLayout_2.addWidget(ui.otherbad_well_b)
     ui.otherbad_well_b.setText("Other Bad")
 
+    ui.bad_lawn_b = QPushButton(ui.centralWidget)
+    ui.horizontalLayout_2.addWidget(ui.bad_lawn_b)
+    ui.bad_lawn_b.setText("Bad Lawn")
+
+    ui.bad_worms_b = QPushButton(ui.centralWidget)
+    ui.horizontalLayout_2.addWidget(ui.bad_worms_b)
+    ui.bad_worms_b.setText("Bad Worms")
+
     # fifth layer
     ui.label_vid_counter = QLabel(ui.centralWidget)
     ui.label_vid_counter.setObjectName("label_vid_counter")
@@ -119,10 +127,12 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self.buttons = {1: self.ui.good_well_b,
                         2: self.ui.misaligned_well_b,
                         3: self.ui.precipitation_well_b,
-                        4: self.ui.contamination_well_b, # bacterial/fungal?
+                        4: self.ui.contamination_well_b,  # bacterial/fungal?
                         5: self.ui.wet_well_b,
                         6: self.ui.badagar_well_b,
-                        7: self.ui.otherbad_well_b}
+                        7: self.ui.otherbad_well_b,
+                        8: self.ui.bad_lawn_b,
+                        9: self.ui.bad_worms_b}
 
         # connect ui elements to functions
         LineEditDragDrop(
@@ -156,8 +166,19 @@ class WellsAnnotator(WellsVideoPlayerGUI):
     def updateAnnotationsFile(self, input_path):
         is_prestim_only = self.ui.checkBox_prestim_only.isChecked()
         # get path to annotation file on disk
-        self.wellsanns_file = get_or_create_annotations_file(
-            input_path, is_prestim_only=is_prestim_only)
+        try:
+            self.wellsanns_file = get_or_create_annotations_file(
+                input_path, is_prestim_only=is_prestim_only)
+        except Exception as ee:
+            err_msg = f"Error:\n{ee.args[0]}"
+            QMessageBox.critical(
+                self,
+                '',
+                err_msg,
+                QMessageBox.Ok)
+            self.wellsanns_file = None
+            return
+
         # read its content
         with pd.HDFStore(self.wellsanns_file) as fid:
             self.filenames_df = fid['/filenames_df'].copy()
@@ -177,7 +198,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         file_id_to_open = self.get_first_file_to_process()
         self.updateVideoFile(file_id_to_open)
 
-        pass
+        return
 
     def updateVideoFile(self, file_id_to_open):
         # print(f'file_id before updating: {self.current_file_id})')
