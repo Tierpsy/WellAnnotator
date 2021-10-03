@@ -59,6 +59,8 @@ pip install -e .
 | 5 | wet |
 | 6 | bad agar |
 | 7 | other bad |
+| 8 | bad lawn |
+| 9 | bad worms |
 | - (or _ ) | previous well |
 | + (or = ) | next well |
 | < (or , ) | previous video |
@@ -69,10 +71,7 @@ pip install -e .
 
 
 ## Future improvements
-* more keyboard shortcut
-* disable scrollwheel-based zooming (when mouse focus on video area)
 * better installation instructions
-* create an entry point for easier launching
 * at the moment the gui ignores any `is_bad_well` info from `/fov_wells` in the masked videos. Will fix this
 * create tool to apply the annotations back in the masked videos
 * better screen recording
