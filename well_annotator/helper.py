@@ -277,13 +277,20 @@ def _rebase_annotations(wells_annotations_filename: Path,
     # should I check that the target files are found in the new path? dunno yet
 
     # actual body of the function
+    old_wrk_dir = _read_working_dir(wells_annotations_filename)
     with h5py.File(wells_annotations_filename, 'r+') as fid:
         # store old one as well, and print it out to the user
-        old_working_dir = fid["/filenames_df"].attrs["working_dir"]
-        print(f"old working directory: {old_working_dir}")
-        fid["/filenames_df"].attrs["previous_working_dir"] = old_working_dir
+        if len(old_wrk_dir) > 0:
+            print(f"old working directory: {old_wrk_dir}")
+            fid["/filenames_df"].attrs["previous_working_dir"] = old_wrk_dir
         # write the new one
         fid["/filenames_df"].attrs["working_dir"] = str(new_working_dir)
+
+    # now check
+    print('Done, checking results:')
+    new_wrk_dir = _read_working_dir(wells_annotations_filename)
+    print('New working directory:')
+    print(new_wrk_dir)
 
     return
 
@@ -311,9 +318,17 @@ def rebase_annotations():
 
 
 def _read_working_dir(wells_annotations_filename):
-    with h5py.File(wells_annotations_filename, 'r+') as fid:
-        print(fid["/filenames_df"].attrs["working_dir"])
-    return
+    wrk_dir = ''
+    try:
+        with h5py.File(wells_annotations_filename, 'r+') as fid:
+            wrk_dir = fid["/filenames_df"].attrs["working_dir"]
+        # print(wrk_dir)
+    except KeyError as ke:
+        err_msg = 'Could not read the working directory.\n'
+        err_msg += "Original error message: \n"
+        err_msg += ke.args[0]
+        print(err_msg)
+    return wrk_dir
 
 
 def read_working_dir():
