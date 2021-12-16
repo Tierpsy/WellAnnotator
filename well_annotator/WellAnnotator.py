@@ -6,7 +6,8 @@ Created on Wed Jul 15 16:12:37 2020
 @author: lferiani
 """
 
-# TODO: look into opening all the videos from a single plate, and allow to move within the plates
+# TODO: look into opening all the videos from a single plate,
+# and allow to move within the plates
 
 import sys
 import h5py

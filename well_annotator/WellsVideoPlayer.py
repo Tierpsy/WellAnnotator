@@ -8,15 +8,14 @@ Created on Fri Jun 26 16:13:32 2020
 import sys
 import tables
 from pathlib import Path
+from numpy import concatenate
 
 from PyQt5.QtWidgets import (
     QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout)
 # from PyQt.QtWidgets import QCheckBox, QMessageBox
 
 from well_annotator.HDF5VideoPlayer import HDF5VideoPlayerGUI
-
-from tierpsy.analysis.split_fov.FOVMultiWellsSplitter import (
-    FOVMultiWellsSplitter)
+from well_annotator.SimpleFOVSplitter import SimpleFOVSplitter
 
 
 def _updateUI(ui):
@@ -244,22 +243,27 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         #     self.image_group = None
         #     QMessageBox.critical(
         #         self, '',
-        #         "The selected file is not a valid .hdf5. Please select a valid file",
+        #         "The selected file is not a valid .hdf5."
+        #         " Please select a valid file",
         #         QMessageBox.Ok)
         #     return
-
-        fovsplitter = FOVMultiWellsSplitter(self.vfilename)
+        fovsplitter = SimpleFOVSplitter(self.vfilename)
         with tables.File(vfilename) as fid:
-            img_stack = fid.get_node('/full_data').read().copy()
-        tiles_list = fovsplitter.tile_FOV(img_stack)
+            n_fulldata_frames = fid.get_node('/full_data').shape[0]
+            skip = -(-n_fulldata_frames // 5)  # pure python version of ceil
+            img_stack = [
+                fid.get_node('/full_data').read(ii).copy()
+                for ii in range(0, n_fulldata_frames, skip)]
+            img_stack = concatenate(img_stack, axis=0)
 
+        self.tiles = fovsplitter.tile_FOV(img_stack)
         self.wells_df = fovsplitter.wells.copy().set_index('well_name')
-        self.tiles = {k: v for (k, v) in tiles_list}
         self.well_names = self.wells_df.index.to_list()
         self.ui.wells_comboBox.clear()
         for wi, wn in enumerate(self.well_names):
             self.ui.wells_comboBox.addItem(wn)
         self.updateImGroup(0)
+        return
 
     def updateImGroup(self, well_index):
         if well_index < 0:
