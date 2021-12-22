@@ -6,7 +6,7 @@ Created on Fri Jun 26 16:13:32 2020
 @author: lferiani
 """
 import sys
-import tables
+# import tables
 from pathlib import Path
 from numpy import concatenate
 
@@ -17,6 +17,8 @@ from PyQt5.QtWidgets import (
 from well_annotator.HDF5VideoPlayer import HDF5VideoPlayerGUI
 from well_annotator.SimpleFOVSplitter import SimpleFOVSplitter
 
+from well_annotator.selectVideoReader import selectVideoReader
+from well_annotator.helper import mask2feats, tierpsyfile2raw
 
 def _updateUI(ui):
 
@@ -167,18 +169,18 @@ def _updateUI(ui):
 class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
 
     def __init__(self, ui=None):
-
         super().__init__()
 
         # Set up the user interface
         self.ui = _updateUI(self.ui)
 
         self.imgstore_name = ''
-        self.fovsplitter = None
         self.well_name = ''
         self.tiles = None
         self.well_names = []
         self.wells_df = None  # current video's
+        self._wellsdef_filename = ''
+        self._vfilename = ''
 
         self.frame_number = 0
         self.min_frame = 0
@@ -195,6 +197,38 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
 
         self.mainImage._view.wheelEvent = self.do_nothing
 
+    @property
+    def wellsdef_filename(self):
+        return self._wellsdef_filename
+
+    @wellsdef_filename.setter
+    def wellsdef_filename(self, value: str):
+
+        if ('MaskedVideos' in value) and (not Path(value).exists()):
+            # input was a masked video, but it does not exist.
+            # new value for the wells definition file
+            value = mask2feats(value)
+
+        assert Path(value).exists(), (
+            'either the masked or featuresN video must exist')
+
+        # do I need to find a different file for the video data?
+        if 'MaskedVideos' in value:
+            vfile = value
+        else:
+            vfile = tierpsyfile2raw(value)
+
+        self._wellsdef_filename = value
+        self.vfilename = vfile
+
+    @property
+    def vfilename(self):
+        return self._vfilename
+
+    @vfilename.setter
+    def vfilename(self, value):
+        self._vfilename = value
+
     def do_nothing(self, event):
         pass
 
@@ -210,7 +244,7 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
     def keyPressEvent(self, event):
         print(self.vfilename)
 
-    def updateVideoFile(self, vfilename):
+    def updateVideoFile(self, hdf5_fname):
 
         # close the if there was another file opened before.
         if self.fid is not None:
@@ -219,15 +253,15 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
             self.fid = None
             self.image_group = None
             self.imgstore_name = ''
-            self.fovsplitter = None
+            self.wellsdef_filename = ''
             self.well_name = ''
             self.well_names = []
             self.tiles = None
             self.ui.wells_comboBox.clear()
             self.wells_df = None
 
-        self.vfilename = vfilename
-        self.imgstore_name = Path(vfilename).parent.name
+        self.wellsdef_filename = hdf5_fname
+        self.imgstore_name = Path(hdf5_fname).parent.name
         self.ui.label_vid.setText(self.imgstore_name)
         # self.videos_dir = self.vfilename.rpartition(os.sep)[0] + os.sep
 
@@ -247,18 +281,8 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         #         " Please select a valid file",
         #         QMessageBox.Ok)
         #     return
-        fovsplitter = SimpleFOVSplitter(self.vfilename)
-        with tables.File(vfilename) as fid:
-            n_fulldata_frames = fid.get_node('/full_data').shape[0]
-            skip = -(-n_fulldata_frames // 5)  # pure python version of ceil
-            img_stack = [
-                fid.get_node('/full_data').read(ii).copy()
-                for ii in range(0, n_fulldata_frames, skip)]
-            img_stack = concatenate(img_stack, axis=0)
+        self.load_data()  # get video data and wells info
 
-        self.tiles = fovsplitter.tile_FOV(img_stack)
-        self.wells_df = fovsplitter.wells.copy().set_index('well_name')
-        self.well_names = self.wells_df.index.to_list()
         self.ui.wells_comboBox.clear()
         for wi, wn in enumerate(self.well_names):
             self.ui.wells_comboBox.addItem(wn)
@@ -306,6 +330,26 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
     def prev_well_fun(self):
         self.ui.wells_comboBox.setCurrentIndex(
             max(0, self.ui.wells_comboBox.currentIndex() - 1))
+        return
+
+    def load_data(self):
+        # read the video data
+        vid = selectVideoReader(self.vfilename)
+        n_fulldata_frames = len(vid)
+        skip = -(-n_fulldata_frames // 5)  # pure python version of ceil
+        # this is a list of tuples (status, 2D frame)
+        img_stack = [
+            vid.read_frame(ii)
+            for ii in range(0, n_fulldata_frames, skip)]
+        img_stack = [f[None, :, :] for s, f in img_stack if (s == 1)]
+        img_stack = concatenate(img_stack, axis=0)
+        vid.release()
+        # read wells definition
+        fovsplitter = SimpleFOVSplitter(self.wellsdef_filename)
+        # chop up wells images and store
+        self.tiles = fovsplitter.tile_FOV(img_stack)
+        self.wells_df = fovsplitter.wells.copy().set_index('well_name')
+        self.well_names = self.wells_df.index.to_list()
         return
 
 

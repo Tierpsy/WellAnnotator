@@ -50,16 +50,18 @@ BUTTON_STYLESHEET_STR = (
     )
 
 
-def _is_child_of_maskedvideos(input_path: Path):
-    return 'MaskedVideos' in input_path.parts
+def _is_child_of_tierpsy_out_dir(input_path: Path):
+    is_it = 'MaskedVideos' in input_path.parts
+    is_it = is_it | ('Results' in input_path.parts)
+    return is_it
 
 
 def check_good_input(input_path: Path):
     if isinstance(input_path, str):
         input_path = Path(input_path)
     if input_path.is_dir():
-        assert _is_child_of_maskedvideos(input_path), \
-            'input_path should be MaskedVideos or its subfolder'
+        assert _is_child_of_tierpsy_out_dir(input_path), \
+            'input_path should contain MaskedVideos or Results'
     else:
         assert input_path.name.endswith('hdf5'), 'Please enter an hdf5 file.'
         with pd.HDFStore(input_path, 'r') as fid:
@@ -108,7 +110,7 @@ def find_wellsanns_file_in_dir(working_dir: Path):
 
 def get_project_root(working_dir: Path):
     """
-    Scan the parts of working_dir for a folder named MaskedVideos.
+    Scan the parts of working_dir for a folder named MaskedVideos or Results.
     Then return its parent
 
     Parameters
@@ -119,14 +121,15 @@ def get_project_root(working_dir: Path):
     Returns
     -------
     proj_root_dir : Path, or None
-        Path to the project root (assuming it's MaskedVideos' parent).
+        Path to the project root
+        (assuming it's MaskedVideos' or Results' parent).
 
     """
     proj_root_dir = None
     dirlist = [working_dir] + list(working_dir.parents)
     for dirname in dirlist:
-        # do sth only if this folder is named MaskedVideos
-        if not dirname.name == 'MaskedVideos':
+        # do sth only if this folder is one of the standard tierpsy ones
+        if dirname.name not in ['MaskedVideos', 'Results']:
             continue
         # but not if you have already done something
         if proj_root_dir is not None:
@@ -167,12 +170,12 @@ def name_new_wellsanns_file(working_dir: Path):
     # and its path
     new_wellsanns_path = working_dir / new_wellsanns_fname
     # then move it to auxiliary files
-    new_wellsanns_path = masked2aux(new_wellsanns_path)
+    new_wellsanns_path = tierpsyoutdir2aux(new_wellsanns_path)
 
     return new_wellsanns_path
 
 
-def get_list_masked_videos(working_dir: Path, is_prestim_only: bool = True):
+def get_list_masked_or_feats(working_dir: Path, is_prestim_only: bool = True):
     """
     Get list of *.hdf5 files in working_dir. filter out any wells_annotations
 
@@ -184,12 +187,14 @@ def get_list_masked_videos(working_dir: Path, is_prestim_only: bool = True):
     Returns
     -------
     fnames : list[Path]
-        List of Path objects to masked videos.
+        List of Path objects to masked or features videos.
 
     """
 
-    # get all hdf5
+    # get all the hdf5 that could contain /fov_wells info
     fnames = working_dir.rglob('*.hdf5')
+    if 'Results' in working_dir.parts:
+        fnames = [f for f in fnames if f.name.endswith('_featuresN.hdf5')]
     # jsut make sure that for some weird reason there is not wellsanns file...
     fnames = [f for f in fnames if not f.name.endswith(WELLS_ANNOTATION_EXT)]
     if is_prestim_only:
@@ -203,17 +208,17 @@ def initialise_annotations_file(working_dir: Path,
     # get name of the file we need to create
     wellsanns_fname = name_new_wellsanns_file(working_dir)
     # get list of files in working_dir
-    masked_fnames = get_list_masked_videos(working_dir,
-                                           is_prestim_only=is_prestim_only)
+    tierpsy_fnames = get_list_masked_or_feats(
+        working_dir, is_prestim_only=is_prestim_only)
     ass_msg = 'Could not find any video, aborting. '
     if is_prestim_only:
         ass_msg += 'You could retry without `prestimulus only`.'
-    assert len(masked_fnames) > 0, ass_msg
+    assert len(tierpsy_fnames) > 0, ass_msg
     # make it relative
-    masked_fnames = [str(f.relative_to(working_dir)) for f in masked_fnames]
+    tierpsy_fnames = [str(f.relative_to(working_dir)) for f in tierpsy_fnames]
     # create files dataframe
-    fnames_df = pd.DataFrame({'file_id': range(len(masked_fnames)),
-                              'filename': masked_fnames})
+    fnames_df = pd.DataFrame({'file_id': range(len(tierpsy_fnames)),
+                              'filename': tierpsy_fnames})
     # write df in file, delete anything inside it
     wellsanns_fname.parent.mkdir(exist_ok=True, parents=True)
     fnames_df.to_hdf(wellsanns_fname,
@@ -235,8 +240,43 @@ def initialise_annotations_file(working_dir: Path,
     return wellsanns_fname
 
 
-def masked2aux(input_path):
-    return Path(str(input_path).replace('MaskedVideos', 'AuxiliaryFiles'))
+def tierpsyoutdir2aux(input_path):
+    aux_path = (
+        str(input_path)
+        .replace('MaskedVideos', 'AuxiliaryFiles')
+        .replace('Results', 'AuxiliaryFiles')
+        )
+    return Path(aux_path)
+
+
+def mask2feats(input_path):
+    _is_return_str = isinstance(input_path, str)
+    out_path = (
+        str(input_path)
+        .replace('MaskedVideos', 'Results')
+        .replace('.hdf5', '_featuresN.hdf5')
+        )
+    if not _is_return_str:
+        out_path = Path(out_path)
+    return out_path
+
+
+def tierpsyfile2raw(input_path):
+    _is_return_str = isinstance(input_path, str)
+    raw_fname = Path(
+        input_path
+        .replace('MaskedVideos', 'RawVideos')
+        .replace('Results', 'RawVideos')
+        .replace('_featuresN.hdf5', '*')
+        .replace('.hdf5', '.*')
+        )
+    raw_candidates = list(raw_fname.parent.rglob(raw_fname.name))
+    assert len(raw_candidates) > 0, f'No videos found for {input_path}'
+    assert len(raw_candidates) == 1, f'Multiple videos for {input_path}'
+    raw_fname = raw_candidates[0]
+    if _is_return_str:
+        raw_fname = str(raw_fname)
+    return raw_fname
 
 
 def get_or_create_annotations_file(input_path: Path,
@@ -245,13 +285,13 @@ def get_or_create_annotations_file(input_path: Path,
     if isinstance(input_path, str):
         input_path = Path(input_path)
     # input check. Needs to be either the right file, or
-    # a folder downstream of MaskedVideos
+    # a folder downstream of MaskedVideos or Results
     _ = check_good_input(input_path)
     if not input_path.is_dir():
         wellsanns_fname = input_path
     else:
         # if a file exists get its name
-        target_dir = masked2aux(input_path)
+        target_dir = tierpsyoutdir2aux(input_path)
         wellsanns_fname = find_wellsanns_file_in_dir(target_dir)
         # if not, create it
         if wellsanns_fname is None:
@@ -345,10 +385,35 @@ def read_working_dir():
     import fire
     fire.Fire(_read_working_dir)
 
+# %%
+def test():
+    data_dir = Path.home() / 'work_repos/WellAnnotator/data'
+    for dd in ['MaskedVideos', 'Results']:
+        assert _is_child_of_tierpsy_out_dir(data_dir / dd)
+        assert check_good_input(data_dir / dd)
+        assert tierpsyoutdir2aux(data_dir / dd) == (data_dir / 'AuxiliaryFiles')
+        assert get_project_root(data_dir / dd) == data_dir, f'{data_dir / dd}'
+        wafname = name_new_wellsanns_file(data_dir / dd)
+        assert 'AuxiliaryFiles' in wafname.parts
+        assert wafname.name.endswith(WELLS_ANNOTATION_EXT)
+        wafname2 = initialise_annotations_file(data_dir / dd)
+        assert wafname == wafname2
+        assert wafname2.exists()
+        wafname2.unlink()
 
+    assert _is_child_of_tierpsy_out_dir(data_dir / 'AuxiliaryFiles') is False
+    try:
+        check_good_input(data_dir / 'AuxiliaryFiles')
+    except AssertionError as e:
+        print(data_dir / 'AuxiliaryFiles', e.args[0])
+
+
+# %%
 if __name__ == "__main__":
 
-    input_str = '/Users/lferiani/work_repos/WellAnnotator/data/MaskedVideos'
+    test()
+
+    input_str = '/Users/lferiani/work_repos/WellAnnotator/data/Results'
     # input_str = '/Users/lferiani/work_repos/WellAnnotator/data/MaskedVideos/data_20200715_152507_wells_annotations.hdf5'
     annotations_file = get_or_create_annotations_file(input_str)
     # out = ask_if_prestim_only()
