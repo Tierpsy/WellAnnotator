@@ -30,7 +30,7 @@ from PyQt5.QtWidgets import (
 from well_annotator.helper import (
     check_good_input,
     get_or_create_annotations_file,
-    get_list_masked_videos,
+    get_list_masked_or_feats,
     WELLS_ANNOTATIONS_DF_COLS,
     BUTTON_STYLESHEET_STR,
     BTN_COLOURS,
@@ -85,7 +85,11 @@ def _updateUI(ui):
     ui.label_vid_counter.setText("#/##")
     ui.horizontalLayout_5.addWidget(ui.label_vid_counter)
 
-    # 6th layer unmodified
+    # 6th layer add placeholder
+    ui.lineEdit_video.setPlaceholderText(
+        "Drag & drop an existing *_wells_annotations.hdf5 file, "
+        "a MaskedVideos or Results folder, or one of their day-subfolders."
+        )
 
     # add 7th layer
     ui.horizontalLayout_7 = QHBoxLayout()
@@ -270,26 +274,26 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             return
         # find all masked videos in working_dir (accounting for prestim flag)
         is_prestim_only = self.ui.checkBox_prestim_only.isChecked()
-        masked_fnames = get_list_masked_videos(
+        tierpsy_fnames = get_list_masked_or_feats(
             self.working_dir, is_prestim_only=is_prestim_only)
         # relative, and string
-        masked_fnames = [
-            str(f.relative_to(self.working_dir)) for f in masked_fnames]
+        tierpsy_fnames = [
+            str(f.relative_to(self.working_dir)) for f in tierpsy_fnames]
         # remove the ones that already existed
-        new_masked_fnames = list(
-            set(masked_fnames) - set(self.filenames_df['filename'].to_list()))
+        new_tierpsy_fnames = list(
+            set(tierpsy_fnames) - set(self.filenames_df['filename'].to_list()))
         # check for early exit
-        if len(new_masked_fnames) == 0:
+        if len(new_tierpsy_fnames) == 0:
             print('No new files found')
             return
         # if new files were found
-        n_new_files = len(new_masked_fnames)
+        n_new_files = len(new_tierpsy_fnames)
         prev_max_id = self.filenames_df['file_id'].max()
         prev_max_index = self.filenames_df.index.max()
         new_file_ids = [prev_max_id + 1 + cc for cc in range(n_new_files)]
         new_index = [prev_max_index + 1 + cc for cc in range(n_new_files)]
         new_filenames_df = pd.DataFrame(
-            {'file_id': new_file_ids, 'filename': new_masked_fnames},
+            {'file_id': new_file_ids, 'filename': new_tierpsy_fnames},
             index=new_index
             )
         print(f'{n_new_files} new files found')
