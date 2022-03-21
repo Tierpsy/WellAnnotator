@@ -213,8 +213,16 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
             'either the masked or featuresN video must exist')
 
         # do I need to find a different file for the video data?
+
         if 'MaskedVideos' in value:
             vfile = value
+            try:
+                vid = selectVideoReader(vfile)
+            except OSError as ose:
+                print(repr(ose))
+                print(
+                    'Masked video does not have full_data, trying raw video')
+                vfile = tierpsyfile2raw(value)
         else:
             vfile = tierpsyfile2raw(value)
 
