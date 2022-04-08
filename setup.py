@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='wellannotator',
-    version='0.0.1',
+    version='0.0.2',
     description='Tools to classify good and bad wells',
     url='https://github.com/Tierpsy/WellAnnotator',
     author='Luigi Feriani',

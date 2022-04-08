@@ -6,8 +6,11 @@ Created on Tue Jul 14 12:20:26 2020
 @author: lferiani
 """
 
+import cv2
 import h5py
+import torch
 import datetime
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -299,6 +302,137 @@ def get_or_create_annotations_file(input_path: Path,
                 input_path, is_prestim_only=is_prestim_only)
 
     return wellsanns_fname
+
+
+def load_CNN_models():
+    """
+    load_CNN_models Load the CNN models used for inference from disk
+
+    Returns
+    -------
+    list
+        list of models
+    """
+    from well_annotator import base_path
+    from well_annotator.trained_models.cnn_definition import (
+        CNNFromTierpsy, CNNFromTierpsyShallower, CNNFromTierpsyEvenShallower)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    models_path = base_path / 'trained_models'
+    # list of model filenames and the right class to use
+    models_to_load = [
+        ('v_01_58_best.pth', CNNFromTierpsy),
+        ('v_01_54_best.pth', CNNFromTierpsy),
+        ('v_02_54_20220224_231530.pth',  CNNFromTierpsyShallower),
+        ('v_04_53_best.pth', CNNFromTierpsyEvenShallower),
+        ('v_04_58_20220324_105528.pth', CNNFromTierpsyEvenShallower),
+    ]
+
+    # load models and their weights, send to right device, put in eval mode
+    # and add to list to return
+    models = []
+    for model_name, ModelClass in models_to_load:
+        model_fname = models_path / model_name
+        checkpoint = torch.load(model_fname, map_location=device)
+        model = ModelClass()
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.to(device)
+        model.eval()
+        models.append(model)
+
+    return models
+
+
+def preprocess_images_for_CNN(images, device=None):
+    """
+    preprocess_images_for_CNN
+    crop, resize, normalise, tensorify, send to device
+
+    Parameters
+    ----------
+    images : numpy array
+        n_frames x height x width, uint8
+
+    Returns
+    -------
+    torch tensor
+        n_frames x 1 x 160 x 160, float
+    """
+
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    crop_sz = 640  # crop size before resizing
+    img_sz = 160  # size of the image after resizing, dictated by the CNN
+    ds_mean = 93.37299001461375 / 255
+    ds_std = 54.632948105068145 / 255
+
+    # crop
+    n_imgs, height, width = images.shape
+    top_pad = (height - crop_sz) // 2
+    left_pad = (width - crop_sz) // 2
+    images_out = images[
+        :, top_pad:top_pad + crop_sz, left_pad:left_pad + crop_sz]
+    # resize, using transpose so n_images uses the colour channel for cv2
+    # since cv2 knows how to resize an image with a colour channel
+    images_out = images_out.transpose((1, 2, 0))
+    images_out = cv2.resize(
+        images_out, (img_sz, img_sz), interpolation=cv2.INTER_AREA)
+    # transpose for pytorch i.e. n_images, n_colours, img_sz, img_sz
+    images_out = images_out.transpose((2, 0, 1))[:, None, :, :]
+    # cast and normalize
+    images_out = torch.from_numpy(images_out).float().div(255)
+    images_out = (images_out - ds_mean) / ds_std
+
+    return images_out.to(device)
+
+
+def apply_one_model(model, images, prediction_threshold=0.3):
+    """
+    Run inference on images using one model
+    since each batch are multiple frames from the same well, apply majority
+    voting to the predictions of each frame by the same model.
+    Return one prediction only
+    """
+
+    with torch.no_grad():
+        # inference, and get predictions
+        batch_logits = model(images)
+        batch_probas = torch.sigmoid(batch_logits).cpu().numpy()
+        batch_predictions = batch_probas > prediction_threshold
+        # apply majority voting to all predictions of the same well/batch
+        uniq_pred, pred_count = np.unique(
+            batch_predictions, return_counts=True)
+        prediction = uniq_pred[np.argmax(pred_count)]
+
+    return prediction
+
+
+def majority_vote(models, images, prediction_threshold=0.3):
+    """
+    Run inference on images using multiple models
+    return the majority vote (i.e. mode) across the predictions of each model
+    """
+
+    # inference on all models
+    models_predictions = [
+        apply_one_model(model, images, prediction_threshold)
+        for model in models]
+
+    # get the most common prediction
+    majority_prediction = mode_fun(models_predictions)
+
+    return majority_prediction
+
+
+def mode_fun(input_array):
+    """
+    numpy implementation of mode function
+    """
+    uu, cc = np.unique(input_array, return_counts=True)
+    mode_value = uu[np.argmax(cc)]
+    return mode_value
 
 
 def _rebase_annotations(wells_annotations_filename: Path,

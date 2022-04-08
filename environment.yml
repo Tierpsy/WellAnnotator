@@ -1,0 +1,22 @@
+name: wellannotator
+channels:
+  - defaults
+  - pytorch
+  - conda-forge
+dependencies:
+  - pytables=3.6.1
+  - h5py
+  - numpy
+  - fire
+  - python=3.9.9
+  - pathlib
+  - pip
+  - opencv
+  - pandas=1.3.5
+  - torchvision=0.9.1
+  - pytorch=1.10.0
+  - tqdm
+  - pyqt=5.12.3
+  - qt=5.12.9
+  - pip:
+    - imgstore

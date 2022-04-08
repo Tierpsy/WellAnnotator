@@ -10,15 +10,16 @@ import sys
 from pathlib import Path
 from numpy import concatenate
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout)
-# from PyQt.QtWidgets import QCheckBox, QMessageBox
+    QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout, QSpinBox)
 
 from well_annotator.HDF5VideoPlayer import HDF5VideoPlayerGUI
 from well_annotator.SimpleFOVSplitter import SimpleFOVSplitter
 
 from well_annotator.selectVideoReader import selectVideoReader
 from well_annotator.helper import mask2feats, tierpsyfile2raw
+
 
 def _updateUI(ui):
 
@@ -113,6 +114,14 @@ def _updateUI(ui):
     ui.horizontalLayout_2.removeWidget(ui.playButton)
     ui.horizontalLayout.addWidget(ui.playButton)
 
+    ui.n_frames_to_read_label = QLabel(ui.centralWidget)
+    ui.horizontalLayout.addWidget(ui.n_frames_to_read_label)
+    ui.n_frames_to_read_label.setText("approx. frames to read:")
+
+    ui.n_frames_to_read_spinBox = QSpinBox(ui.centralWidget)
+    ui.horizontalLayout.addWidget(ui.n_frames_to_read_spinBox)
+    ui.n_frames_to_read_spinBox.setFocusPolicy(Qt.NoFocus)
+
     # third layer
     ui.prev_well_b = QPushButton(ui.centralWidget)
     ui.horizontalLayout_3.addWidget(ui.prev_well_b)
@@ -187,6 +196,14 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         self.tot_frames = 50
         self.ui.spinBox_frame.setMaximum(self.tot_frames - 1)
         self.ui.imageSlider.setMaximum(self.tot_frames - 1)
+        self._target_frames_to_read = 5
+        self.ui.n_frames_to_read_spinBox.setMinimum(1)
+        self.ui.n_frames_to_read_spinBox.setMaximum(self.tot_frames)
+        self.ui.n_frames_to_read_spinBox.setValue(self.target_frames_to_read)
+        self.ui.n_frames_to_read_spinBox.editingFinished.connect(
+            lambda: setattr(self, 'target_frames_to_read',
+                self.ui.n_frames_to_read_spinBox.value())
+            )
 
         self.ui.wells_comboBox.activated.connect(self.updateImGroup)
         self.ui.wells_comboBox.currentIndexChanged.connect(self.updateImGroup)
@@ -236,6 +253,20 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
     @vfilename.setter
     def vfilename(self, value):
         self._vfilename = value
+
+    @property
+    def target_frames_to_read(self):
+        return self._target_frames_to_read
+
+    @target_frames_to_read.setter
+    def target_frames_to_read(self, value):
+        self._target_frames_to_read = value
+        if len(self.wellsdef_filename) > 0:
+            self.updateVideoFile(self.wellsdef_filename)
+
+    # def set_target_frames_to_read(self, value):
+    #     """wrapper otherwise the callback does not work"""
+    #     self.target_frames_to_read = value
 
     def do_nothing(self, event):
         pass
@@ -344,7 +375,11 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
         # read the video data
         vid = selectVideoReader(self.vfilename)
         n_fulldata_frames = len(vid)
-        skip = -(-n_fulldata_frames // 5)  # pure python version of ceil
+        if self._target_frames_to_read >= n_fulldata_frames:
+            skip = 1
+        else:
+            # pure python version of ceil
+            skip = -(-n_fulldata_frames // self._target_frames_to_read)
         # this is a list of tuples (status, 2D frame)
         img_stack = [
             vid.read_frame(ii)
