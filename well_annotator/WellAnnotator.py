@@ -309,10 +309,10 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         # are there files with wells that have not been annotated yet?
         left_behind = self.get_file_id_with_skipped_wells()
         if len(left_behind) > 0:
-            if left_behind.gt(file_id).any():
+            left_behind = np.array(left_behind)
+            if any(lb > file_id for lb in left_behind):
                 # print(f'found {left_behind}')
-                next_file_id = left_behind.loc[
-                    left_behind.gt(file_id)].min()
+                next_file_id = left_behind[left_behind > file_id].min()
             else:
                 # print('any file with non annotated wells is behind this one')
                 next_file_id = left_behind.min()
@@ -328,8 +328,14 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         return self.get_next_file_with_unannotated_wells(file_id=-1)
 
     def get_file_id_with_skipped_wells(self):
+        # left behind is list of file ids that have well labels 0
+        # or have not been seen yet
         left_behind = self.wells_annotations_df.query(
-            'well_label == 0')['file_id']
+            'well_label == 0')['file_id'].unique().tolist()
+        left_behind = left_behind + list(
+            set(self.filenames_df['file_id'].to_list()) -
+            set(self.wells_annotations_df['file_id'].to_list())
+            )
         return left_behind
 
     def get_vfilename_from_file_id(self, file_id_to_open):
@@ -717,7 +723,11 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 QMessageBox.No | QMessageBox.Yes, QMessageBox.Yes)
 
             if (reply == QMessageBox.No) and (
-                    self.wells_annotations_df['well_label'].eq(0).any()):
+                    self.wells_annotations_df['well_label'].eq(0).any() or
+                    (
+                        self.wells_annotations_df['file_id'].max() <
+                        self.filenames_df['file_id'].max()
+                    )):
                 warn_msg = "Would you like to classify the unannotated wells?"
                 reply = QMessageBox.question(
                     self, 'Warning', warn_msg,
