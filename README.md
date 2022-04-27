@@ -68,12 +68,13 @@ Note: this only works for 96-well plates with square wells.
 * drag and drop the folder you want to work in
     * if you've already worked on this folder before, the GUI will have created a `*_wells_annotations.hdf5` file, you can also drag and drop that file
 * click on the `Run CNN Classifier` button
-  * the CNN will overwrite any existing annotation (if you ok the warning)
+  * the CNN will overwrite any existing annotation (if you ok the warning), or only classify the unannotated wells if you choose this option in the second warning window
+    * progress will be saved to disk every time a new video is loaded
   * wells classified as `good` will be annotated as such
   * wells the classifier thinks are `bad` will be left "unannotated"
   * progress will be shown with a progress bar in the terminal you launched the GUI from
   * use the `Next Well to Review` button to cycle through the wells that the CNN thought were `bad`, and classify them manually as above. The manual step is necessay because the models was tuned to catch as many `bad` wells as possible, but that means that many `good` wells are also classified as `bad`.
-* save
+* save to disk
 
 ### Keyboard Shortcuts
 
