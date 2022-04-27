@@ -25,12 +25,11 @@ pip install -e .
 
 ### Updating an existing installation
 
-Assuming that this code was cloned or donwloaded to `~/behavgenom_repos/WellAnnotator` and that the `wellannotator` environment is active, you can update the code by executing
+Assuming that this code was cloned or donwloaded to `~/behavgenom_repos/WellAnnotator` and that the `wellannotator` environment has already been created, you can update the code by executing
 ```bash
 cd ~/behavgenom_repos/WellAnnotator
-git pull
-conda env create -f environment.yml
 conda activate wellannotator
+git pull
 pip install -e .
 ```
 ## Starting the program
