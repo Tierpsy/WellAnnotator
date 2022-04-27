@@ -13,6 +13,7 @@ import sys
 import h5py
 import numpy as np
 import pandas as pd
+import warnings
 from tqdm import tqdm
 from pathlib import Path
 from functools import partial
@@ -626,6 +627,10 @@ class WellsAnnotator(WellsVideoPlayerGUI):
     @_annotations_loaded_only
     def save_to_disk_fun(self):
         self.store_progress()
+        warnings.simplefilter(
+            action='ignore',
+            category=pd.errors.PerformanceWarning
+            )
         self.wells_annotations_df.to_hdf(
             self.wellsanns_file,
             key='/wells_annotations_df',
@@ -701,15 +706,31 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         from well_annotator.helper import (
             load_CNN_models, preprocess_images_for_CNN, majority_vote)
 
-        if self.wells_annotations_df is not None:
-            warn_msg = "Existing annotation will be overwritten. Continue?"
+        is_skip_existing_annotations = False
+        if len(self.wells_annotations_df) > 0:
+            warn_msg = (
+                "Existing annotations detected.\n"
+                "Overwrite the existing annotations?"
+                )
             reply = QMessageBox.question(
                 self, 'Warning', warn_msg,
                 QMessageBox.No | QMessageBox.Yes, QMessageBox.Yes)
 
-            if reply == QMessageBox.No:
+            if (reply == QMessageBox.No) and (
+                    self.wells_annotations_df['well_label'].eq(0).any()):
+                warn_msg = "Would you like to classify the unannotated wells?"
+                reply = QMessageBox.question(
+                    self, 'Warning', warn_msg,
+                    QMessageBox.No | QMessageBox.Yes, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    is_skip_existing_annotations = True
+                else:
+                    print('Nothing done, exiting')
+                    return
+            else:
                 print('Nothing done, exiting')
                 return
+
 
         # load the model
         models = load_CNN_models()
@@ -722,9 +743,17 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         pbar = tqdm(desc='files processed', total=len(self.filenames_df))
         last_file_well = (None, None)
         while last_file_well != (self.current_file_id, self.well_name):
-            # update progress bar whenever we change file id
+            # update progress bar and store progress whenever we change file id
             if self.current_file_id != last_file_well[0]:
-                pbar.update()
+                pbar.update(n=1)
+                self.save_to_disk_fun()
+
+            # skip the classification if we asked not to overwrite
+            if is_skip_existing_annotations:
+                if self.wells_df.loc[self.well_name, 'well_label'] != 0:
+                    last_file_well = (self.current_file_id, self.well_name)
+                    self.next_well_fun()
+                    continue
 
             # classify the well's images
             images = preprocess_images_for_CNN(self.image_group)
@@ -741,7 +770,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             last_file_well = (self.current_file_id, self.well_name)
             self.next_well_fun()
 
-        self.store_progress()
+        self.save_to_disk_fun()
 
         return
 
