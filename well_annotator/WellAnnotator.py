@@ -718,28 +718,31 @@ class WellsAnnotator(WellsVideoPlayerGUI):
                 "Existing annotations detected.\n"
                 "Overwrite the existing annotations?"
                 )
-            reply = QMessageBox.question(
+            reply_1 = QMessageBox.question(
                 self, 'Warning', warn_msg,
                 QMessageBox.No | QMessageBox.Yes, QMessageBox.Yes)
 
-            if (reply == QMessageBox.No) and (
-                    self.wells_annotations_df['well_label'].eq(0).any() or
-                    (
+            if reply_1 == QMessageBox.No:
+
+                if self.wells_annotations_df['well_label'].eq(0).any() or (
                         self.wells_annotations_df['file_id'].max() <
-                        self.filenames_df['file_id'].max()
-                    )):
-                warn_msg = "Would you like to classify the unannotated wells?"
-                reply = QMessageBox.question(
-                    self, 'Warning', warn_msg,
-                    QMessageBox.No | QMessageBox.Yes, QMessageBox.Yes)
-                if reply == QMessageBox.Yes:
-                    is_skip_existing_annotations = True
-                else:
-                    print('Nothing done, exiting')
+                        self.filenames_df['file_id'].max()):
+
+                    warn_msg = (
+                        "Would you like to classify the unannotated wells?")
+                    reply_2 = QMessageBox.question(
+                        self, 'Warning', warn_msg,
+                        QMessageBox.No | QMessageBox.Yes, QMessageBox.Yes)
+                    if reply_2 == QMessageBox.Yes:
+                        is_skip_existing_annotations = True
+                    else:
+                        print('Nothing done, exiting')
+                        return
+                else:  # all annotated
+                    print('Nothing to do, exiting')
                     return
             else:
-                print('Nothing done, exiting')
-                return
+                print('Overwriting existing annotations')
 
 
         # load the model
