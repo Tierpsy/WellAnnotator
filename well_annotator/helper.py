@@ -409,11 +409,17 @@ def apply_one_model(model, images, prediction_threshold=0.3):
     return prediction
 
 
-def majority_vote(models, images, prediction_threshold=0.3):
+def consensus_vote(
+        models, images,
+        prediction_threshold=0.3, consensus_type='mode', is_debug=False):
     """
     Run inference on images using multiple models
-    return the majority vote (i.e. mode) across the predictions of each model
+    return the consensus vote across the predictions of each model
+    consensus is either "mode" or "any"
     """
+
+    assert consensus_type in ['mode', 'any'], (
+        f'consensus_type must be "mode" or "any", found {consensus_type}')
 
     # inference on all models
     models_predictions = [
@@ -421,9 +427,15 @@ def majority_vote(models, images, prediction_threshold=0.3):
         for model in models]
 
     # get the most common prediction
-    majority_prediction = mode_fun(models_predictions)
+    if consensus_type == 'mode':
+        consensus_prediction = mode_fun(models_predictions)
+    elif consensus_type == 'any':
+        consensus_prediction = any(models_predictions)
 
-    return majority_prediction
+    if is_debug:
+        print(f'{models_predictions} => {consensus_prediction}')
+
+    return consensus_prediction
 
 
 def mode_fun(input_array):

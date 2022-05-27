@@ -12,7 +12,8 @@ from numpy import concatenate
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout, QSpinBox)
+    QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout, QSpinBox,
+    QGridLayout, QSpacerItem, QSizePolicy)
 
 from well_annotator.HDF5VideoPlayer import HDF5VideoPlayerGUI
 from well_annotator.SimpleFOVSplitter import SimpleFOVSplitter
@@ -56,7 +57,49 @@ def _updateUI(ui):
     ui.comboBox_h5path.deleteLater()
     ui.comboBox_h5path = None
 
-    # Remove all layouts
+    ui.horizontalLayout_3.removeWidget(ui.spinBox_frame)
+    ui.horizontalLayout_2.removeWidget(ui.imageSlider)
+    ui.horizontalLayout_2.removeWidget(ui.playButton)
+
+    ui.horizontalLayout.removeWidget(ui.pushButton_video)
+    ui.horizontalLayout.removeWidget(ui.lineEdit_video)
+
+    # create new widgets
+    # for number of frames to read
+    ui.n_frames_to_read_label = QLabel(ui.centralWidget)
+    ui.n_frames_to_read_label.setText("approx. frames to read:")
+    ui.n_frames_to_read_spinBox = QSpinBox(ui.centralWidget)
+    ui.n_frames_to_read_spinBox.setFocusPolicy(Qt.NoFocus)
+    # for wells navigation
+    ui.prev_well_b = QPushButton(ui.centralWidget)
+    ui.prev_well_b.setText("Prev Well")
+    ui.next_well_b = QPushButton(ui.centralWidget)
+    ui.next_well_b.setText("Next Well")
+    # to know what well we're looking at
+    ui.wells_comboBox = QComboBox(ui.centralWidget)
+    ui.wells_comboBox.setEditable(False)
+    ui.wells_comboBox.setObjectName("wells_comboBox")
+    ui.wells_comboBox.addItem("")
+    ui.label_well = QLabel(ui.centralWidget)
+    ui.label_well.setObjectName("label_well")
+    ui.label_well.setText("well name: ")
+    ui.label_well_counter = QLabel(ui.centralWidget)
+    ui.label_well_counter.setObjectName("label_well_counter")
+    ui.label_well_counter.setText("#/##")
+    # for video navigation
+
+    # to know what video we're looking at
+    ui.label_vid = QLabel(ui.centralWidget)
+    ui.label_vid.setObjectName("label_vid")
+    ui.label_vid.setText("video_name")
+    ui.label_vid.setScaledContents(False)
+    # dummy thing to stop label from expanding
+    # ui.dummy_comboBox = QComboBox(ui.centralWidget)
+    # ui.dummy_comboBox.setEditable(False)
+    # ui.dummy_comboBox.setObjectName("dummy_comboBox")
+    # ui.dummy_comboBox.addItem("")
+
+    # Remove all layouts and widgets
     ui.horizontalLayout.deleteLater()
     ui.horizontalLayout = None
     ui.horizontalLayout_2.deleteLater()
@@ -66,111 +109,81 @@ def _updateUI(ui):
     ui.horizontalLayout_6.deleteLater()
     ui.horizontalLayout_6 = None
 
-    # define layouts
-    ui.horizontalLayout = QHBoxLayout()
-    ui.horizontalLayout.setContentsMargins(11, 11, 11, 11)
-    ui.horizontalLayout.setSpacing(6)
-    ui.horizontalLayout.setObjectName("horizontalLayout")
-    ui.verticalLayout.addLayout(ui.horizontalLayout)
+    # define layouts for the left column, under the video
+    ui.horizontalLayout_L1 = QHBoxLayout()
+    ui.horizontalLayout_L1.setContentsMargins(11, 11, 11, 11)
+    ui.horizontalLayout_L1.setSpacing(6)
+    ui.horizontalLayout_L1.setObjectName("horizontalLayout_L1")
+    ui.verticalLayout.addLayout(ui.horizontalLayout_L1)
 
-    ui.horizontalLayout_2 = QHBoxLayout()
-    ui.horizontalLayout_2.setContentsMargins(11, 11, 11, 11)
-    ui.horizontalLayout_2.setSpacing(6)
-    ui.horizontalLayout_2.setObjectName("horizontalLayout_2")
-    ui.verticalLayout.addLayout(ui.horizontalLayout_2)
+    ui.horizontalLayout_L2 = QHBoxLayout()
+    ui.horizontalLayout_L2.setContentsMargins(11, 11, 11, 11)
+    ui.horizontalLayout_L2.setSpacing(6)
+    ui.horizontalLayout_L2.setObjectName("horizontalLayout_L2")
+    ui.verticalLayout.addLayout(ui.horizontalLayout_L2)
 
-    ui.horizontalLayout_3 = QHBoxLayout()
-    ui.horizontalLayout_3.setContentsMargins(11, 11, 11, 11)
-    ui.horizontalLayout_3.setSpacing(6)
-    ui.horizontalLayout_3.setObjectName("horizontalLayout_3")
-    ui.verticalLayout.addLayout(ui.horizontalLayout_3)
+    # define layouts for the right column, where the commands are
+    # this will be in the future for annotations
+    ui.gridLayout_R1 = QGridLayout()
+    ui.gridLayout_R1.setContentsMargins(11, 11, 11, 11)
+    ui.gridLayout_R1.setSpacing(6)
+    ui.gridLayout_R1.setObjectName("gridLayout_R1")
+    ui.verticalLayout_2.addLayout(ui.gridLayout_R1)
 
-    ui.horizontalLayout_4 = QHBoxLayout()
-    ui.horizontalLayout_4.setContentsMargins(11, 11, 11, 11)
-    ui.horizontalLayout_4.setSpacing(6)
-    ui.horizontalLayout_4.setObjectName("horizontalLayout_4")
-    ui.verticalLayout.addLayout(ui.horizontalLayout_4)
+    ui.verticalSpacer_R1 = QSpacerItem(
+        20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+    ui.verticalLayout_2.addItem(ui.verticalSpacer_R1)
 
-    ui.horizontalLayout_5 = QHBoxLayout()
-    ui.horizontalLayout_5.setContentsMargins(11, 11, 11, 11)
-    ui.horizontalLayout_5.setSpacing(6)
-    ui.horizontalLayout_5.setObjectName("horizontalLayout_5")
-    ui.verticalLayout.addLayout(ui.horizontalLayout_5)
+    # this will be used for wells navigation
+    ui.gridLayout_R2 = QGridLayout()
+    ui.gridLayout_R2.setContentsMargins(11, 11, 11, 11)
+    ui.gridLayout_R2.setSpacing(6)
+    ui.gridLayout_R2.setObjectName("gridLayout_R2")
+    ui.verticalLayout_2.addLayout(ui.gridLayout_R2)
 
-    ui.horizontalLayout_6 = QHBoxLayout()
-    ui.horizontalLayout_6.setContentsMargins(11, 11, 11, 11)
-    ui.horizontalLayout_6.setSpacing(6)
-    ui.horizontalLayout_6.setObjectName("horizontalLayout_6")
-    ui.verticalLayout.addLayout(ui.horizontalLayout_6)
+    ui.verticalSpacer_R2 = QSpacerItem(
+        20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+    ui.verticalLayout_2.addItem(ui.verticalSpacer_R2)
+
+    # this will be used for video navigation
+    ui.gridLayout_R3 = QGridLayout()
+    ui.gridLayout_R3.setContentsMargins(11, 11, 11, 11)
+    ui.gridLayout_R3.setSpacing(6)
+    ui.gridLayout_R3.setObjectName("gridLayout_R3")
+    ui.verticalLayout_2.addLayout(ui.gridLayout_R3)
+
+    # this will just be for the video label and counter
+    ui.gridLayout_inset = QGridLayout()
+    ui.gridLayout_inset.setContentsMargins(11, 11, 11, 11)
+    ui.gridLayout_inset.setSpacing(6)
+    ui.gridLayout_inset.setObjectName("gridLayout_inset")
+    ui.gridLayout_R3.addLayout(ui.gridLayout_inset, 1, 0, 1, 2)
+
+    ui.verticalSpacer_R3 = QSpacerItem(
+        20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+    ui.verticalLayout_2.addItem(ui.verticalSpacer_R3)
 
     # place widgets:
-    # first layer
-    ui.horizontalLayout_3.removeWidget(ui.spinBox_frame)
-    ui.horizontalLayout.addWidget(ui.spinBox_frame)
+    # first layer under the video box
+    ui.horizontalLayout_L1.addWidget(ui.spinBox_frame)
+    ui.horizontalLayout_L1.addWidget(ui.imageSlider)
+    # ui.horizontalLayout_L1.addWidget(ui.playButton)
+    ui.horizontalLayout_L1.addWidget(ui.n_frames_to_read_label)
+    ui.horizontalLayout_L1.addWidget(ui.n_frames_to_read_spinBox)
+    # second layer under the video box
+    ui.horizontalLayout_L2.addWidget(ui.lineEdit_video)
+    ui.horizontalLayout_L2.addWidget(ui.pushButton_video)
 
-    ui.horizontalLayout_2.removeWidget(ui.imageSlider)
-    ui.horizontalLayout.addWidget(ui.imageSlider)
+    # wells navigation cluster
+    ui.gridLayout_R2.addWidget(ui.prev_well_b, 0, 0)
+    ui.gridLayout_R2.addWidget(ui.next_well_b, 0, 1)
+    ui.gridLayout_R2.addWidget(ui.wells_comboBox, 1, 0)
+    ui.gridLayout_R2.addWidget(ui.label_well, 1, 1)
+    ui.gridLayout_R2.addWidget(ui.label_well_counter, 1, 2)
 
-    ui.horizontalLayout_2.removeWidget(ui.playButton)
-    ui.horizontalLayout.addWidget(ui.playButton)
-
-    ui.n_frames_to_read_label = QLabel(ui.centralWidget)
-    ui.horizontalLayout.addWidget(ui.n_frames_to_read_label)
-    ui.n_frames_to_read_label.setText("approx. frames to read:")
-
-    ui.n_frames_to_read_spinBox = QSpinBox(ui.centralWidget)
-    ui.horizontalLayout.addWidget(ui.n_frames_to_read_spinBox)
-    ui.n_frames_to_read_spinBox.setFocusPolicy(Qt.NoFocus)
-
-    # third layer
-    ui.prev_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_3.addWidget(ui.prev_well_b)
-    ui.prev_well_b.setText("Prev Well")
-
-    ui.next_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_3.addWidget(ui.next_well_b)
-    ui.next_well_b.setText("Next Well")
-
-    ui.wells_comboBox = QComboBox(ui.centralWidget)
-    ui.wells_comboBox.setEditable(False)
-    ui.wells_comboBox.setObjectName("wells_comboBox")
-    ui.wells_comboBox.addItem("")
-    ui.horizontalLayout_3.addWidget(ui.wells_comboBox)
-
-    ui.label_well = QLabel(ui.centralWidget)
-    ui.label_well.setObjectName("label_well")
-    ui.label_well.setText("well name: ")
-    ui.horizontalLayout_3.addWidget(ui.label_well)
-
-    ui.label_well_counter = QLabel(ui.centralWidget)
-    ui.label_well_counter.setObjectName("label_well_counter")
-    ui.label_well_counter.setText("#/##")
-    ui.horizontalLayout_3.addWidget(ui.label_well_counter)
-
-    # fourth layer
-    ui.prev_vid_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_4.addWidget(ui.prev_vid_b)
-    ui.prev_vid_b.setText("Prev Video")
-
-    ui.next_vid_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_4.addWidget(ui.next_vid_b)
-    ui.next_vid_b.setText("Next Video")
-
-    ui.save_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_4.addWidget(ui.save_b)
-    ui.save_b.setText("Save")
-
-    # fifth layer
-    ui.label_vid = QLabel(ui.centralWidget)
-    ui.label_vid.setObjectName("label_vid")
-    ui.label_vid.setText("video_name")
-    ui.horizontalLayout_5.addWidget(ui.label_vid)
-
-    # ui.horizontalLayout.removeWidget(ui.lineEdit_video)
-    ui.horizontalLayout_6.addWidget(ui.lineEdit_video)
-
-    ui.horizontalLayout.removeWidget(ui.pushButton_video)
-    ui.horizontalLayout_6.addWidget(ui.pushButton_video)
+    # video navigation cluster
+    # ui.gridLayout_R3.addWidget(ui.dummy_comboBox, 1, 0)
+    ui.gridLayout_inset.addWidget(ui.label_vid, 0, 0)
 
     return ui
 

@@ -21,12 +21,17 @@ from functools import partial
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QApplication,
+    QGridLayout,
     QHBoxLayout,
     QPushButton,
     QFileDialog,
     QMessageBox,
     QCheckBox,
     QLabel,
+    QSpacerItem,
+    QSizePolicy,
+    QButtonGroup,
+    QRadioButton,
     )
 
 from well_annotator.helper import (
@@ -44,104 +49,146 @@ from well_annotator.WellsVideoPlayer import WellsVideoPlayerGUI
 
 def _updateUI(ui):
 
-    # second layer
+    # create annotation buttons
     ui.good_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.good_well_b)
     ui.good_well_b.setText("Good Well")
     ui.good_well_b.setToolTip("Shortcut: 1")
-
     ui.misaligned_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.misaligned_well_b)
     ui.misaligned_well_b.setText("Misaligned")
     ui.misaligned_well_b.setToolTip("Shortcut: 2")
-
     ui.precipitation_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.precipitation_well_b)
     ui.precipitation_well_b.setText("Precipitation")
     ui.precipitation_well_b.setToolTip("Shortcut: 3")
-
     ui.contamination_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.contamination_well_b)
     ui.contamination_well_b.setText("Contamination")
     ui.contamination_well_b.setToolTip("Shortcut: 4")
-
     ui.wet_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.wet_well_b)
     ui.wet_well_b.setText("Wet Well")
     ui.wet_well_b.setToolTip("Shortcut: 5")
-
     ui.badagar_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.badagar_well_b)
     ui.badagar_well_b.setText("Bad Agar")
     ui.badagar_well_b.setToolTip("Shortcut: 6")
-
     ui.otherbad_well_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.otherbad_well_b)
     ui.otherbad_well_b.setText("Other Bad")
     ui.otherbad_well_b.setToolTip("Shortcut: 7")
-
     ui.bad_lawn_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.bad_lawn_b)
     ui.bad_lawn_b.setText("Bad Lawn")
     ui.bad_lawn_b.setToolTip("Shortcut: 8")
-
     ui.bad_worms_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_2.addWidget(ui.bad_worms_b)
     ui.bad_worms_b.setText("Bad Worms")
     ui.bad_worms_b.setToolTip("Shortcut: 9")
 
-    # third layer
-    # add tooltips and a pushbutton to go to next well to review
+    # create more buttons to navigate wells, add tooltips to existing ones
     ui.next_well_to_review_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_3.insertWidget(2, ui.next_well_to_review_b)
     ui.next_well_to_review_b.setText("Next Well To Review")
     ui.next_well_to_review_b.setToolTip("Shortcut: ]")
     ui.prev_well_b.setToolTip("Shortcut: - or _")
     ui.next_well_b.setToolTip("Shortcut: + or =")
 
-    # fourth layer
-    # add tooltip to the pushbutton
+    # create buttons and items for video navigation
+    ui.prev_vid_b = QPushButton(ui.centralWidget)
+    ui.prev_vid_b.setText("Prev Video")
     ui.prev_vid_b.setToolTip("Shortcut: ,")
+    ui.next_vid_b = QPushButton(ui.centralWidget)
+    ui.next_vid_b.setText("Next Video")
     ui.next_vid_b.setToolTip("Shortcut: .")
-    ui.save_b.setToolTip("Shortcut: s")
-
-    # fifth layer
     ui.label_vid_counter = QLabel(ui.centralWidget)
     ui.label_vid_counter.setObjectName("label_vid_counter")
     ui.label_vid_counter.setText("#/##")
-    ui.horizontalLayout_5.addWidget(ui.label_vid_counter)
+    # create buttons for rescanning the videos directory
+    ui.rescan_dir_b = QPushButton(ui.centralWidget)
+    ui.rescan_dir_b.setText("Rescan working directory")
+    ui.rescan_dir_b.setToolTip("Only adds videos, cannot remove them!!!")
+    ui.checkBox_prestim_only = QCheckBox(ui.centralWidget)
+    ui.checkBox_prestim_only.setObjectName("checkbox_prestim_only")
+    ui.checkBox_prestim_only.setText("prestim only")
+    ui.checkBox_prestim_only.toggle()
 
-    # add button for running neural network
+    # create buttons for running CNN
     ui.run_nn_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_5.addWidget(ui.run_nn_b)
     ui.run_nn_b.setText("Run CNN Classifier")
 
-    # 6th layer add placeholder and a tooltip for the open button
+    # create radio buttons in a group to choose how to run the CNN
+    ui.nn_mode_label = QLabel(ui.centralWidget)
+    ui.nn_mode_label.setObjectName("nn_mode_label")
+    ui.nn_mode_label.setText(
+        "Well classified as good if, out of multiple models:")
+    ui.nn_mode_rbg = QButtonGroup(ui.centralWidget)
+    ui.nn_majvote_rb = QRadioButton(ui.centralWidget)
+    ui.nn_majvote_rb.setObjectName("nn_majvote_rb")
+    ui.nn_majvote_rb.setText("majority returns 'good'")
+    ui.nn_majvote_rb.setEnabled(False)
+    ui.nn_anybad_rb = QRadioButton(ui.centralWidget)
+    ui.nn_anybad_rb.setObjectName("nn_anybad_rb")
+    ui.nn_anybad_rb.setText("no one returns 'bad'")
+    ui.nn_anybad_rb.setEnabled(False)
+    ui.nn_mode_rbg.addButton(ui.nn_majvote_rb)
+    ui.nn_mode_rbg.addButton(ui.nn_anybad_rb)
+    # ui.nn_majvote_rb.setChecked(True)
+
+    # create buttons for exporting to csv
+    ui.export_csv_b = QPushButton(ui.centralWidget)
+    ui.export_csv_b.setText("Export to csv")
+
+    # create button for saving
+    ui.save_b = QPushButton(ui.centralWidget)
+    ui.save_b.setText("Save")
+    ui.save_b.setToolTip("Shortcut: s")
+
+    # update field with filename, placeholder text and tooltip
     ui.lineEdit_video.setPlaceholderText(
         "Drag & drop an existing *_wells_annotations.hdf5 file,"
         "a MaskedVideos or Results folder, or one of their day-subfolders."
         )
     ui.pushButton_video.setToolTip("Shortcut: o")
 
-    # add 7th layer
-    ui.horizontalLayout_7 = QHBoxLayout()
-    ui.horizontalLayout_7.setContentsMargins(11, 11, 11, 11)
-    ui.horizontalLayout_7.setSpacing(6)
-    ui.horizontalLayout_7.setObjectName("horizontalLayout_7")
-    ui.verticalLayout.addLayout(ui.horizontalLayout_7)
-    # 7th layer widgets
-    ui.rescan_dir_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_7.addWidget(ui.rescan_dir_b)
-    ui.rescan_dir_b.setText(
-        "Rescan working directory (only adds vids, cannot remove them!!!)")
-    ui.checkBox_prestim_only = QCheckBox(ui.centralWidget)
-    ui.checkBox_prestim_only.setObjectName("checkbox_prestim_only")
-    ui.checkBox_prestim_only.setText("prestim only")
-    ui.horizontalLayout_7.addWidget(ui.checkBox_prestim_only)
-    ui.checkBox_prestim_only.toggle()
-    ui.export_csv_b = QPushButton(ui.centralWidget)
-    ui.horizontalLayout_7.addWidget(ui.export_csv_b)
-    ui.export_csv_b.setText("Export to csv")
+    # create additional layouts
+    # this is for the CNN controls
+    ui.gridLayout_R4 = QGridLayout()
+    ui.gridLayout_R4.setContentsMargins(11, 11, 11, 11)
+    ui.gridLayout_R4.setSpacing(6)
+    ui.gridLayout_R4.setObjectName("gridLayout_R4")
+    ui.verticalLayout_2.addLayout(ui.gridLayout_R4)
+
+    ui.verticalSpacer_R4 = QSpacerItem(
+        20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+    ui.verticalLayout_2.addItem(ui.verticalSpacer_R4)
+
+    # this for saving and exporting
+    ui.gridLayout_R5 = QGridLayout()
+    ui.gridLayout_R5.setContentsMargins(11, 11, 11, 11)
+    ui.gridLayout_R5.setSpacing(6)
+    ui.gridLayout_R5.setObjectName("gridLayout_R5")
+    ui.verticalLayout_2.addLayout(ui.gridLayout_R5)
+
+
+    # place widgets in layouts
+    # assign buttons for well annotation to layout
+    ui.gridLayout_R1.addWidget(ui.good_well_b, 0, 0)
+    ui.gridLayout_R1.addWidget(ui.misaligned_well_b, 0, 1)
+    ui.gridLayout_R1.addWidget(ui.precipitation_well_b, 0, 2)
+    ui.gridLayout_R1.addWidget(ui.contamination_well_b, 1, 0)
+    ui.gridLayout_R1.addWidget(ui.wet_well_b, 1, 1)
+    ui.gridLayout_R1.addWidget(ui.badagar_well_b, 1, 2)
+    ui.gridLayout_R1.addWidget(ui.otherbad_well_b, 2, 0)
+    ui.gridLayout_R1.addWidget(ui.bad_lawn_b, 2, 1)
+    ui.gridLayout_R1.addWidget(ui.bad_worms_b, 2, 2)
+    # cluster: wells navigation. already has previous/next, just update grid
+    ui.gridLayout_R2.addWidget(ui.next_well_to_review_b, 0, 2)
+    # cluster: videos navigation. already has label_vid, update grid
+    ui.gridLayout_R3.addWidget(ui.prev_vid_b, 0, 0)
+    ui.gridLayout_R3.addWidget(ui.next_vid_b, 0, 1)
+    ui.gridLayout_R3.addWidget(ui.rescan_dir_b, 2, 0)
+    ui.gridLayout_R3.addWidget(ui.checkBox_prestim_only, 2, 1)
+    ui.gridLayout_inset.addWidget(ui.label_vid_counter, 0, 1)
+    # place button for running neural network
+    ui.gridLayout_R4.addWidget(ui.nn_mode_label, 0, 0, 1, 2)
+    ui.gridLayout_R4.addWidget(ui.nn_majvote_rb, 1, 0)
+    ui.gridLayout_R4.addWidget(ui.nn_anybad_rb, 1, 1)
+    ui.gridLayout_R4.addWidget(ui.run_nn_b, 2, 0, 1, 2)
+    # cluster: export/save
+    ui.gridLayout_R5.addWidget(ui.export_csv_b, 0, 0)
+    ui.gridLayout_R5.addWidget(ui.save_b, 0, 1)
 
     return ui
 
@@ -159,6 +206,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self.working_dir = None
         self.wells_annotations_df = None
         self.current_file_id = None
+        self._nn_voting_mode = None
 
         self.buttons = {
             1: self.ui.good_well_b,
@@ -187,6 +235,8 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         self.ui.run_nn_b.clicked.connect(self.run_wellclassifier_fun)
         self.ui.rescan_dir_b.clicked.connect(self.rescan_working_dir)
         self.ui.export_csv_b.clicked.connect(self.export_csv_fun)
+        for btn in self.ui.nn_mode_rbg.buttons():
+            btn.toggled.connect(self.on_nn_mode_toggled)
         # self.ui.checkBox_prestim_only.clicked.connect(self.print_checkBox)
         self._setup_buttons()
 
@@ -242,6 +292,11 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             self.working_dir = Path(
                 fid.get_storer('filenames_df').attrs.working_dir)
             self.wells_annotations_df = fid['/wells_annotations_df'].copy()
+            try:
+                _nn_voting_mode = fid.get_storer(
+                    'wells_annotations_df').attrs['nn_voting_mode']
+            except KeyError:
+                _nn_voting_mode = 'mode'
 
         self.ui.lineEdit_video.setText(str(self.wellsanns_file))
 
@@ -251,6 +306,17 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             self.ui.checkBox_prestim_only.setChecked(False)
             self.ui.checkBox_prestim_only.setEnabled(False)
             print('set prestim only false')
+
+        for button in self.ui.nn_mode_rbg.buttons():
+            button.setEnabled(True)
+
+        if _nn_voting_mode == 'mode':
+            self.ui.nn_majvote_rb.setChecked(True)
+        elif _nn_voting_mode == 'any':
+            self.ui.nn_anybad_rb.setChecked(True)
+        else:
+            raise Exception(f'unknown voting mode {_nn_voting_mode}')
+
 
         file_id_to_open = self.get_first_file_to_process()
         self.updateVideoFile(file_id_to_open)
@@ -631,6 +697,29 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         return
 
     @_annotations_loaded_only
+    def on_nn_mode_toggled(self):
+        cbutton = self.sender()
+        if cbutton.isChecked() is False:
+            return
+        print(cbutton)
+        if cbutton == self.ui.nn_majvote_rb:
+            self.nn_voting_mode = 'mode'
+        elif cbutton == self.ui.nn_anybad_rb:
+            self.nn_voting_mode = 'any'
+        else:
+            raise Exception('Unknown voting mode')
+        print(f'radio button toggled: {self.nn_voting_mode}')
+
+    @property
+    def nn_voting_mode(self):
+        return self._nn_voting_mode
+
+    @nn_voting_mode.setter
+    def nn_voting_mode(self, value):
+        assert value in ['mode', 'any'], f'Unknown voting mode {value}'
+        self._nn_voting_mode = value
+
+    @_annotations_loaded_only
     def save_to_disk_fun(self):
         self.store_progress()
         warnings.simplefilter(
@@ -650,6 +739,10 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         # add working_dir
         with h5py.File(self.wellsanns_file, 'r+') as fid:
             fid["/filenames_df"].attrs["working_dir"] = str(self.working_dir)
+        # add nn_voting_mode
+        with h5py.File(self.wellsanns_file, 'r+') as fid:
+            fid["/wells_annotations_df"].attrs["nn_voting_mode"] = (
+                self.nn_voting_mode)
         return
 
     @_annotations_loaded_only
@@ -710,7 +803,7 @@ class WellsAnnotator(WellsVideoPlayerGUI):
         review.
         """
         from well_annotator.helper import (
-            load_CNN_models, preprocess_images_for_CNN, majority_vote)
+            load_CNN_models, preprocess_images_for_CNN, consensus_vote)
 
         is_skip_existing_annotations = False
         if len(self.wells_annotations_df) > 0:
@@ -744,7 +837,6 @@ class WellsAnnotator(WellsVideoPlayerGUI):
             else:
                 print('Overwriting existing annotations')
 
-
         # load the model
         models = load_CNN_models()
 
@@ -770,7 +862,8 @@ class WellsAnnotator(WellsVideoPlayerGUI):
 
             # classify the well's images
             images = preprocess_images_for_CNN(self.image_group)
-            well_prediction = majority_vote(models, images)
+            well_prediction = consensus_vote(
+                models, images, consensus_type=self.nn_voting_mode)
 
             # NN predicts 1 if it's bad well, 0 if it is good
             # translate prediction into label (good well, unannotated if bad)
