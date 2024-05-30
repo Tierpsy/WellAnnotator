@@ -16,7 +16,7 @@ dependencies:
   - torchvision=0.9.1
   - pytorch=1.10.0
   - tqdm
-  - pyqt=5.12.3
-  - qt=5.12.9
+  - pyqt
+  - qt
   - pip:
     - imgstore

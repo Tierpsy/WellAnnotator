@@ -387,7 +387,10 @@ class WellsVideoPlayerGUI(HDF5VideoPlayerGUI):
     def load_data(self):
         # read the video data
         vid = selectVideoReader(self.vfilename)
-        n_fulldata_frames = len(vid)
+        #print(len(vid))
+        print(int(vid.__len__()))
+        n_fulldata_frames = int(vid.__len__())#int(len(vid))
+        #print(len(vid))
         if self._target_frames_to_read >= n_fulldata_frames:
             skip = 1
         else:
