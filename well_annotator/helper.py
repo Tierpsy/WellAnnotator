@@ -253,14 +253,14 @@ def initialise_annotations_file(working_dir: Path, is_prestim_only: bool = True)
 
 
 def tierpsyoutdir2aux(input_path):
-    if "Airtable" in str(input_path):
-        aux_path = str(input_path).split("Results/")[0] + "AuxiliaryFiles"
-    else:
-        aux_path = (
-            str(input_path)
-            .replace("MaskedVideos", "AuxiliaryFiles")
-            .replace("Results", "AuxiliaryFiles")
-        )
+    # if "Airtable" in str(input_path):
+    #   aux_path = str(input_path).split("Results/")[0] + "AuxiliaryFiles"
+    # else:
+    aux_path = (
+        str(input_path)
+        .replace("MaskedVideos", "AuxiliaryFiles")
+        .replace("Results", "AuxiliaryFiles")
+    )
     return Path(aux_path)
 
 
